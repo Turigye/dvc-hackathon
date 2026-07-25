@@ -1,6 +1,6 @@
 # Multi-Agent Coordination
 
-Two agents work this repo concurrently: **Claude (lead / creative direction)** and **Codex (implementation)**. Read this before editing shared files.
+Two agents work this repo concurrently: **Claude (lead / creative direction)** and **Codex (implementation)**. This file is the shared operational source of truth. Read it before editing shared files.
 
 ## Authority
 
@@ -12,19 +12,43 @@ Two agents work this repo concurrently: **Claude (lead / creative direction)** a
 | `src/` implementation | Codex | Claude reviews, does not race-edit the same file. |
 | Schema, data layer, auth | Codex | Must stay within the three-table shape in the brief. |
 | Dependencies | Codex | Anything that ships client-side JS needs a one-line justification here. |
-| Deployment, submission packet | Claude | — |
+| Deployment, submission packet | Claude | Codex supplies technical verification details and release evidence. |
+
+## Start-of-work checklist
+
+Before beginning a task, both agents must:
+
+1. Read this file, including `In flight`, `Decision log`, `Handoff log`, and `Open questions`.
+2. Run `git status --short` and inspect the last two commits with `git log --oneline -2`.
+3. Confirm the work belongs to their owned area. If it crosses ownership boundaries, record a targeted question or a proposed decision before editing.
+4. Lock every shared file before changing it.
 
 ## File locking convention
 
-To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight`. Remove it when done. Shared files: `design.md`, `AGENTS.md`, `README.md`, `package.json`, `src/app/globals.css`, `src/app/layout.tsx`.
+To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight`. Shared files: `design.md`, `AGENTS.md`, `README.md`, `package.json`, `src/app/globals.css`, `src/app/layout.tsx`, and `COORDINATION.md`.
 
 Anything under `src/games/` is Codex-owned and needs no announcement.
 
+- A lock must state the owner, exact files, intended change, and release condition.
+- Do not edit an active lock held by the other agent. Record a question instead.
+- After the change is validated and committed, clear the lock and write a Handoff log entry in the same checkpoint.
+- If edits overlap unexpectedly, pause the overlapping work, preserve both changes, record the conflict in `Open questions`, and let the file owner choose the merge direction.
+
 ## In flight
 
-_(empty)_
+_(empty — add `- [agent] files: … | change: … | release: …` before shared-file work)_
 
-## Confirmed decisions
+## Decision log
+
+Decisions here are binding. A later entry must explicitly name the decision it replaces.
+
+| ID | Date | Decision | Owner | Status |
+| --- | --- | --- | --- | --- |
+| D-001 | 2026-07-25 | Claude owns product/design direction; Codex owns implementation, schema/auth, dependencies, testing, and Git operations. | User | Active |
+| D-002 | 2026-07-25 | `COORDINATION.md` is the single shared coordination channel; locks, decisions, handoffs, and blockers are recorded here. | User | Active |
+| D-003 | 2026-07-25 | Secrets, OAuth provider setup, Supabase project connection, and Vercel account access require user authorization and never enter Git. | User | Active |
+
+## Confirmed product decisions
 
 - **Brief: Concept 01 — Tip Tap Games.** Chosen for deterministic demo, zero external AI dependency in the critical path, and graceful degradation (any single game can be cut without breaking the feed).
 - **Creative direction: coin-op arcade nostalgia.** See `design.md`. Nostalgia must read as *behavior* — attract mode, three-letter initials, machine copy — not as pixel-art decoration.
@@ -60,4 +84,19 @@ Hard rules for every game:
 
 ## Open questions
 
-_(Codex: append here rather than editing owned files.)_
+_(Record only blockers or decisions that require the other owner or the user. Include the impacted file or flow and a proposed resolution.)_
+
+## Handoff log
+
+Append-only. Every completed checkpoint must include the completed work, affected files, validation, next owner, and unresolved blocker.
+
+| Date / time | Agent | Completed work | Files affected | Validation | Next owner | Unresolved blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-25 18:30 EAT | Codex | Established the shared collaboration protocol, including ownership, locks, decision records, start-of-work checks, and handoffs. | `COORDINATION.md` | Reviewed clean worktree and last two commits before update. | Both | None. |
+
+## Commit and release rules
+
+- Keep commits atomic and scoped to one owner or one shared-file handoff.
+- Never bundle a design decision with unrelated implementation work.
+- A release checkpoint requires: clean working tree, pushed commit, deployment URL, repository URL, completed submission packet, and recorded technical/design verification.
+- Claude verifies submission narrative and visual direction before deployment; Codex verifies functionality, database security, performance, and public smoke testing.
