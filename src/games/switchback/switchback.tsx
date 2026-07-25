@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ArrowFatDown, Coin, Lightning, PersonSimpleRun, ShieldCheck, Warning } from "@phosphor-icons/react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { GameProps } from "../types";
-import { createSwitchbackState, step, type SwitchbackState } from "./simulation";
+import { createSwitchbackState, step, type Lane, type RunnerEntity, type SwitchbackState } from "./simulation";
+import styles from "./switchback.module.css";
 
-const hazards = Array.from({ length: 120 }, (_, segment) => ({
-  segment,
-  lane: (segment % 2) as 0 | 1,
-  impactAt: 0.72,
-}));
+const freshState = () => createSwitchbackState({ seed: 17 });
 
-const freshState = () => createSwitchbackState({ seed: 17, hazards });
+type StyleVars = CSSProperties & Record<`--${string}`, string | number>;
 
-/** Plain-shape blockout. Art direction deliberately waits for the phone feel review. */
 export function Switchback({ active, onFinish }: GameProps) {
   const [running, setRunning] = useState(false);
   const [view, setView] = useState<SwitchbackState>(freshState);
@@ -28,16 +25,17 @@ export function Switchback({ active, onFinish }: GameProps) {
     let frame = 0;
     let previous = performance.now();
     const tick = (now: number) => {
-      const next = step(state.current, Math.min(64, now - previous), { flip: false });
+      const next = step(state.current, Math.min(64, now - previous), { move: 0 });
       previous = now;
       state.current = next;
       setView(next);
       if (next.failed) {
         setRunning(false);
+        navigator.vibrate?.([24, 36, 48]);
         finish.current({
-          score: next.score + next.bonus,
+          score: next.score,
           durationMs: Math.max(1_000, Date.now() - startedAt.current),
-          label: next.failure === "hazard" ? "PISTON HIT" : "MISSED THE TURN",
+          label: "ROADBLOCK HIT",
         });
         return;
       }
@@ -53,58 +51,137 @@ export function Switchback({ active, onFinish }: GameProps) {
     return () => window.clearTimeout(stop);
   }, [active]);
 
-  const flip = (source: "pointer" | "click" | "keyboard") => {
+  const move = (direction: -1 | 1, source: "pointer" | "click" | "keyboard") => {
     if (!active) return;
     const now = performance.now();
-    // Pointer-down is the primary input. Click is an accessibility and
-    // browser-compatibility fallback, never a second flip from the same tap.
     if (source === "click" && now - lastInputAt.current < 250) return;
     lastInputAt.current = now;
+
     if (!running) {
-      const initial = freshState();
+      const initial = step(freshState(), 0, { move: direction });
       state.current = initial;
       setView(initial);
       startedAt.current = Date.now();
       setRunning(true);
+      navigator.vibrate?.(8);
       return;
     }
-    const next = step(state.current, 0, { flip: true });
+
+    const next = step(state.current, 0, { move: direction });
     state.current = next;
     setView(next);
+    navigator.vibrate?.(5);
   };
 
-  const laneX = view.lane === 0 ? 30 : 70;
-  const nextLaneX = view.lane === 0 ? 70 : 30;
-  // The feed owns the bottom title, board strip, and swipe cue. Keep every
-  // gameplay object in the reserved playfield above that chrome.
-  const runnerY = 66 - view.progress * 44;
-  const hazard = view.hazards.find((item) => item.segment === view.segment && !item.resolved);
-  const hazardY = hazard ? 66 - hazard.impactAt * 44 : -20;
+  const onKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    move(event.key === "ArrowLeft" ? -1 : 1, "keyboard");
+  };
+
+  const roadShift = (view.distance * 420) % 90;
+  const runnerX = laneX(view.lane, 0.72);
 
   return (
-    <button
-      type="button"
-      aria-label={running ? "Tap to flip at the next turn" : "Tap to start Switchback"}
-      onPointerDownCapture={(event) => { event.preventDefault(); flip("pointer"); }}
-      onClickCapture={() => flip("click")}
-      onKeyDown={(event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        flip("keyboard");
-      }}
-      className="stage"
-      style={{ background: "#111", touchAction: "none" }}
+    <div
+      className={styles.stage}
+      role="application"
+      aria-label="Switchback. Tap the left or right side to steer between three lanes and avoid obstacles."
+      onKeyDown={onKey}
+      style={{ "--road-shift": `${roadShift}px` } as StyleVars}
     >
-      <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", top: 0, right: 0, left: 0, width: "100%", height: "calc(100% - 210px)", pointerEvents: "none" }}>
-        {[0, 1, 2, 3, 4].map((row) => <polyline key={row} points={row % 2 ? "30,12 70,30 30,48" : "70,12 30,30 70,48"} transform={`translate(0 ${row * 18})`} fill="none" stroke="#2d6cdf" strokeWidth="4" />)}
-      </svg>
-      {hazard && <i aria-hidden="true" style={{ position: "absolute", left: `${hazard.lane === 0 ? 22 : 62}%`, top: `${hazardY}%`, width: "16%", height: "7%", background: "#df3b32", pointerEvents: "none" }} />}
-      <i aria-hidden="true" style={{ position: "absolute", left: `calc(${laneX}% - 16px)`, top: `calc(${runnerY}% - 16px)`, width: 32, height: 32, background: "#f6f6f6", borderRadius: "50%", pointerEvents: "none" }} />
-      <i aria-hidden="true" style={{ position: "absolute", left: `calc(${nextLaneX}% - 3px)`, top: "39%", width: 6, height: 6, background: "#f6f6f6", pointerEvents: "none" }} />
-      <div data-testid="switchback-score" aria-live="polite" style={{ position: "absolute", top: 76, left: 18, color: "#fff", fontFamily: "monospace", fontSize: 16, pointerEvents: "none" }}>SCORE {view.score + view.bonus}</div>
-      <div aria-live="polite" style={{ position: "absolute", top: "31%", left: 0, right: 0, color: "#fff", fontFamily: "monospace", fontSize: 13, letterSpacing: ".14em", textAlign: "center", pointerEvents: "none" }}>
-        {running ? "TAP BEFORE THE NEXT TURN" : "FIRST TAP STARTS THE RUNNER"}
+      <div className={styles.road} aria-hidden="true">
+        <div className={styles.roadSurface} />
+        <div className={`${styles.laneLine} ${styles.laneLineLeft}`} />
+        <div className={`${styles.laneLine} ${styles.laneLineRight}`} />
+        {Array.from({ length: 12 }, (_, index) => (
+          <i key={index} className={styles.roadTick} style={{ "--tick": index } as StyleVars} />
+        ))}
       </div>
-    </button>
+
+      <div className={styles.hud} aria-live="polite">
+        <span className={styles.high}>HI {Math.max(84, view.score).toString().padStart(3, "0")}</span>
+        <strong data-testid="switchback-score">{view.score.toString().padStart(3, "0")}</strong>
+      </div>
+
+      <div className={styles.powerHud} aria-label="Power-up status">
+        <span className={view.shieldCharges ? styles.powerActive : ""}><ShieldCheck weight="fill" /> {view.shieldCharges}</span>
+        <span className={view.boostMs > 0 ? styles.boostActive : ""}><Lightning weight="fill" /> {view.boostMs > 0 ? "2X" : "—"}</span>
+      </div>
+
+      <div className={styles.entityLayer} aria-hidden="true">
+        {view.entities.map((entity) => <GameEntity key={entity.id} entity={entity} />)}
+      </div>
+
+      <div
+        className={`${styles.runner} ${view.boostMs > 0 ? styles.runnerBoost : ""} ${view.shieldCharges ? styles.runnerShield : ""}`}
+        style={{ left: `${runnerX}%`, "--lean": `${view.lane * 9}deg` } as StyleVars}
+        aria-hidden="true"
+      >
+        <PersonSimpleRun weight="fill" />
+      </div>
+
+      {view.event && (
+        <div key={view.eventNonce} className={styles.event} aria-live="polite">
+          {eventLabel(view.event)}
+        </div>
+      )}
+
+      {!running && !view.failed && (
+        <div className={styles.instructions}>
+          <b>RUN THE BLUE</b>
+          <span>Tap left or right to change lanes.</span>
+          <span>Avoid red. Collect amber and cobalt.</span>
+          <div className={styles.controlDiagram}><span>← LEFT</span><span>RIGHT →</span></div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className={`${styles.control} ${styles.controlLeft}`}
+        aria-label={running ? "Move one lane left" : "Start and move left"}
+        onPointerDown={(event) => { event.preventDefault(); move(-1, "pointer"); }}
+        onClick={() => move(-1, "click")}
+      />
+      <button
+        type="button"
+        className={`${styles.control} ${styles.controlRight}`}
+        aria-label={running ? "Move one lane right" : "Start and move right"}
+        onPointerDown={(event) => { event.preventDefault(); move(1, "pointer"); }}
+        onClick={() => move(1, "click")}
+      />
+    </div>
   );
+}
+
+function GameEntity({ entity }: { entity: RunnerEntity }) {
+  const x = laneX(entity.lane, entity.y);
+  const scale = Math.max(0.55, Math.min(1.28, 0.62 + entity.y * 0.78));
+  const style = { left: `${x}%`, top: `${entity.y * 100}%`, "--entity-scale": scale } as StyleVars;
+
+  if (entity.kind === "piston") {
+    return <div className={`${styles.entity} ${styles.piston}`} style={style}><i /><ArrowFatDown weight="fill" /></div>;
+  }
+  if (entity.kind === "spikes") {
+    return <div className={`${styles.entity} ${styles.spikes}`} style={style}><Warning weight="fill" /></div>;
+  }
+  if (entity.kind === "shield") {
+    return <div className={`${styles.entity} ${styles.pickup} ${styles.shield}`} style={style}><ShieldCheck weight="fill" /></div>;
+  }
+  if (entity.kind === "boost") {
+    return <div className={`${styles.entity} ${styles.pickup} ${styles.boost}`} style={style}><Lightning weight="fill" /></div>;
+  }
+  return <div className={`${styles.entity} ${styles.pickup} ${styles.coin}`} style={style}><Coin weight="fill" /></div>;
+}
+
+function laneX(lane: Lane, y: number) {
+  return 50 + lane * (10 + Math.max(0, y) * 11);
+}
+
+function eventLabel(event: NonNullable<SwitchbackState["event"]>) {
+  if (event === "shield") return "SHIELD UP";
+  if (event === "boost") return "BOOST 2X";
+  if (event === "coin") return "+5";
+  if (event === "smash") return "SMASH +3";
+  return "SHIELD SAVE";
 }
