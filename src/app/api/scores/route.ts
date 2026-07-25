@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const parsed = scoreSchema.safeParse(await request.json());
   if (!parsed.success || !isGameSlug(parsed.data.game)) return NextResponse.json({ error: "Invalid score submission." }, { status: 400 });
   const { game, score, durationMs, deviceId } = parsed.data;
-  const minimumDuration = game === "beat-drop" ? 2_000 : game === "slipstream" ? 1_000 : 500;
+  const minimumDuration = game === "burn-in" ? 1_000 : game === "lcd-run" ? 1_000 : 1_000;
   if (durationMs < minimumDuration) return NextResponse.json({ error: "Round ended too quickly." }, { status: 422 });
   try {
     const storedInSupabase = await recordPersistentScore(game, deviceId, score, parsed.data.roundId, durationMs);

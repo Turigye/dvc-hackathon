@@ -51,6 +51,11 @@ export async function mergeGuestIntoAuthenticatedPlayer(deviceId: string, authUs
   const { data: guest } = await supabase.from("players").select("id").eq("device_id", deviceId).maybeSingle();
   const { data: account } = await supabase.from("players").select("id").eq("auth_user_id", authUserId).maybeSingle();
   if (!guest && !account) { await supabase.from("players").insert({ device_id: deviceId, auth_user_id: authUserId }); return; }
-  if (guest && account && guest.id !== account.id) { await supabase.from("scores").update({ player_id: account.id }).eq("player_id", guest.id); await supabase.from("players").delete().eq("id", guest.id); return; }
+  if (guest && account && guest.id !== account.id) {
+    await supabase.from("scores").update({ player_id: account.id }).eq("player_id", guest.id);
+    await supabase.from("players").delete().eq("id", guest.id);
+    await supabase.from("players").update({ device_id: deviceId, updated_at: new Date().toISOString() }).eq("id", account.id);
+    return;
+  }
   if (guest) await supabase.from("players").update({ auth_user_id: authUserId, updated_at: new Date().toISOString() }).eq("id", guest.id);
 }

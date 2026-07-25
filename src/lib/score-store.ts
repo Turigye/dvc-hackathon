@@ -6,9 +6,9 @@ export type LeaderboardResponse = { entries: LeaderboardEntry[]; playerRank: num
 type StoredScore = { game: GameSlug; deviceId: string; score: number; createdAt: number };
 
 const seeds: StoredScore[] = [
-  { game: "beat-drop", deviceId: "jax", score: 512, createdAt: 1 }, { game: "beat-drop", deviceId: "nova", score: 476, createdAt: 2 }, { game: "beat-drop", deviceId: "kat", score: 431, createdAt: 3 },
-  { game: "slipstream", deviceId: "neon", score: 913, createdAt: 4 }, { game: "slipstream", deviceId: "ivy", score: 788, createdAt: 5 }, { game: "slipstream", deviceId: "rae", score: 742, createdAt: 6 },
-  { game: "blinkstack", deviceId: "mika", score: 310, createdAt: 7 }, { game: "blinkstack", deviceId: "sol", score: 272, createdAt: 8 }, { game: "blinkstack", deviceId: "eon", score: 244, createdAt: 9 },
+  { game: "burn-in", deviceId: "jax", score: 640, createdAt: 1 }, { game: "burn-in", deviceId: "nova", score: 490, createdAt: 2 }, { game: "burn-in", deviceId: "kat", score: 360, createdAt: 3 },
+  { game: "lcd-run", deviceId: "neon", score: 62, createdAt: 4 }, { game: "lcd-run", deviceId: "ivy", score: 48, createdAt: 5 }, { game: "lcd-run", deviceId: "rae", score: 39, createdAt: 6 },
+  { game: "signal-lock", deviceId: "mika", score: 980, createdAt: 7 }, { game: "signal-lock", deviceId: "sol", score: 732, createdAt: 8 }, { game: "signal-lock", deviceId: "eon", score: 615, createdAt: 9 },
 ];
 
 const memoryScores = [...seeds];

@@ -36,7 +36,7 @@ Anything under `src/games/` is Codex-owned and needs no announcement.
 
 ## In flight
 
-_(empty — add `- [agent] files: … | change: … | release: …` before shared-file work)_
+_(empty — P0 game-contract checkpoint validated and ready for commit)_
 
 ## Decision log
 
@@ -95,6 +95,7 @@ Append-only. Every completed checkpoint must include the completed work, affecte
 | 2026-07-25 18:30 EAT | Codex | Established the shared collaboration protocol, including ownership, locks, decision records, start-of-work checks, and handoffs. | `COORDINATION.md` | Reviewed clean worktree and last two commits before update. | Both | None. |
 | 2026-07-25 19:05 EAT | Claude | Lead review of `1ea1527`. Two P0 brief violations, three P1 defects, two P2. Full findings and fixes in `REVIEW-01.md`. | `REVIEW-01.md` | Ran `pnpm typecheck` and `pnpm lint` — both clean. Read all of `src/` and the migration. | Codex | P0-1 `Slipstream` has no collision detection and is unplayable; P0-2 timed rounds violate the DoD. Both block submission. |
 | 2026-07-25 19:40 EAT | Claude | Data-layer and auth review in `REVIEW-02.md`, plus a DoD progress assessment (~55%). Adds P0-3 (migration slug set blocks the P0-1 rename), P1-1 (sign-in merge orphans the player's device id and zeroes their best), P1-2 (score endpoint trivially spoofable on a public livestream), P1-3 (feed is not endless). Combined REVIEW-01+02 priority order recorded. | `REVIEW-02.md`, `COORDINATION.md` | Static read of `score-persistence.ts`, `score-store.ts`, both API routes, both auth routes, and the migration. **No runtime verification — Supabase has never been connected.** | Codex | Three questions for Codex at the foot of `REVIEW-02.md`. Deployment and Supabase credentials still blocked on the user. |
+| 2026-07-25 20:05 EAT | Codex | Replaced the timed placeholder lineup with the three specified game contracts: Burn-In recall, LCD Run discrete lane/collision survival, and Signal Lock drag/hold. Updated game registry, local seed boards, API duration guards, the unrun migration slug/check/seed set, and the account merge's device-id handoff. | `src/components/tip-tap-arcade.tsx`, `src/lib/games.ts`, `src/lib/score-store.ts`, `src/app/api/scores/route.ts`, `src/lib/score-persistence.ts`, `supabase/migrations/20260725190000_tip_tap_games.sql` | `pnpm typecheck`, `pnpm lint`, `pnpm build` all pass. Browser/play QA and live Supabase verification remain pending credentials. | Claude review → Codex P1 hardening | P1: current three-card feed is not endless; initials/attract are not yet implemented; score API anti-cheat and Supabase/OAuth need live verification. |
 
 ## Commit and release rules
 
