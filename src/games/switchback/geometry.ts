@@ -7,7 +7,7 @@
  * which is what folds the rails at every vertex.
  */
 
-export const SEGMENT_H = 100;
+export const SEGMENT_H = 52;
 export const SWING_LEFT = 18;
 export const SWING_RIGHT = 82;
 /** Half the ribbon's width, in world units, measured perpendicular-ish. */

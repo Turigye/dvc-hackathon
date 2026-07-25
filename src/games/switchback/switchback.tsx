@@ -4,11 +4,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "../types";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
-import { RAIL_OFFSET, SEGMENT_H, centre, railPoint, ribbonPath } from "./geometry";
+import { RAIL_OFFSET, centre, railPoint, ribbonPath } from "./geometry";
 
 /** Where the runner sits vertically on screen, as a fraction of the viewBox. */
 const RUNNER_SCREEN_Y = 0.68;
-const VIEW_H = SEGMENT_H * (LOOKAHEAD + 1);
+/** viewBox is 100 wide; height tracks a tall phone so `slice` does not crop the runner. */
+const VIEW_H = 212;
 
 /**
  * Blockout renderer. Flat shapes only — the art pass replaces this layer.
@@ -71,7 +72,9 @@ export function Switchback({ active, onFinish }: GameProps) {
   const runner = railPoint(segment, offset, state.rail);
   // Scroll the world so the runner stays at a fixed height on screen.
   const cameraY = runner.y - VIEW_H * RUNNER_SCREEN_Y;
-  const first = Math.max(0, segment - 1);
+  // Draw behind the runner too, so the ribbon reads as continuous rather than
+  // starting in mid-air on the first frame.
+  const first = segment - 3;
   const last = segment + LOOKAHEAD;
 
   return (
