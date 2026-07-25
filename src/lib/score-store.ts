@@ -6,7 +6,8 @@ export type LeaderboardResponse = { entries: LeaderboardEntry[]; playerRank: num
 type StoredScore = { game: GameSlug; deviceId: string; score: number; createdAt: number };
 
 const seeds: StoredScore[] = [
-  { game: "stack", deviceId: "jax", score: 320, createdAt: 1 }, { game: "stack", deviceId: "nova", score: 250, createdAt: 2 }, { game: "stack", deviceId: "kat", score: 180, createdAt: 3 },
+  { game: "switchback", deviceId: "jax", score: 320, createdAt: 1 }, { game: "switchback", deviceId: "nova", score: 250, createdAt: 2 }, { game: "switchback", deviceId: "kat", score: 180, createdAt: 3 },
+  { game: "skyline", deviceId: "ivy", score: 210, createdAt: 10 }, { game: "skyline", deviceId: "jax", score: 160, createdAt: 11 },
   { game: "slice", deviceId: "neon", score: 1240, createdAt: 4 }, { game: "slice", deviceId: "ivy", score: 890, createdAt: 5 }, { game: "slice", deviceId: "rae", score: 640, createdAt: 6 },
   { game: "color-rings", deviceId: "mika", score: 260, createdAt: 7 }, { game: "color-rings", deviceId: "sol", score: 190, createdAt: 8 }, { game: "color-rings", deviceId: "eon", score: 140, createdAt: 9 },
 ];

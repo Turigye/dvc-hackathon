@@ -85,7 +85,7 @@ const CHASER_WAKES_AT = 6;
 const CHASER_START_GAP = 1.8;
 const CHASER_MAX_GAP = 2.15;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
-const CHASER_CLOSE_BASE = 0.03;
+const CHASER_CLOSE_BASE = 0.115;
 const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
 /** While dragging, you crawl and the pursuer closes far faster. This is the jeopardy. */
 const DRAG_SPEED = 0.55;
@@ -228,7 +228,7 @@ function pushBack(state: SwitchbackState, segments: number) {
 
 /** How fast the pursuer closes, in segments per second, at the current score. */
 export function chaserCloseRate(score: number) {
-  return CHASER_CLOSE_BASE + Math.min(0.045, score / 4200);
+  return CHASER_CLOSE_BASE + Math.min(0.09, score / 1800);
 }
 
 function emit(state: SwitchbackState, event: SwitchbackState["event"]) {

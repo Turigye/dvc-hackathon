@@ -147,10 +147,19 @@ describe("the pursuer", () => {
   });
 
   test("wakes and then closes on its own", () => {
-    const state = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 30000);
-    expect(state.chaserActive).toBe(true);
-    const later = run(state, 4000);
-    expect(later.chaseGap).toBeLessThan(state.chaseGap);
+    const woken = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 14000);
+    expect(woken.chaserActive).toBe(true);
+    expect(woken.failed).toBe(false);
+    const later = run(woken, 2000);
+    expect(later.chaseGap).toBeLessThan(woken.chaseGap);
+  });
+
+  test("closes the full gap in well under half a minute of safe play", () => {
+    let state = createSwitchbackState({ seed: 3, spawnEnabled: false });
+    let ms = 0;
+    while (!state.failed && ms < 60000) { state = step(state, 16, idle); ms += 16; }
+    expect(state.failure).toBe("caught");
+    expect(ms).toBeLessThan(35000);
   });
 
   test("catches a player who never takes a risk", () => {

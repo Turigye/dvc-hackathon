@@ -158,3 +158,11 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .world-cobalt .board-strip b { color:#F5A623; }
 .world-cobalt .prompt { border:2px solid #EDE7DC; border-radius:3px; width:max-content; margin:0 auto; padding:7px 16px; background:rgb(11 15 26 / .84); color:#EDE7DC; font-weight:700; box-shadow:4px 4px 0 #E8391B; }
 .stage[data-running="true"] .prompt { opacity:0; }
+
+/* ---- Minimal in-game key: name the shapes without a tutorial ---- */
+.key { position:absolute; right:14px; top:calc(72px + env(safe-area-inset-top)); z-index:3; display:grid; gap:5px; margin:0; padding:8px 10px; list-style:none;
+  border:1.5px solid rgb(237 231 220 / .22); border-radius:4px; background:rgb(11 15 26 / .72); font-size:.5rem; letter-spacing:.14em; color:#EDE7DC; pointer-events:none; }
+.key li { display:flex; align-items:center; gap:6px; }
+.key i { width:9px; height:9px; border-radius:2px; flex:0 0 auto; }
+.k-hazard { background:#E8391B; } .k-coin { background:#F5A623; border-radius:50%; }
+.k-drag { background:#7A4A12; } .k-chaser { background:#E8391B; border-radius:50%; border:1.5px solid #EDE7DC; }

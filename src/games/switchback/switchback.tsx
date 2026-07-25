@@ -139,6 +139,12 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
       </svg>
 
+      <ul className="key" aria-label="What the shapes mean">
+        <li><i className="k-hazard" />DODGE</li>
+        <li><i className="k-coin" />GRAB</li>
+        <li><i className="k-drag" />SLOW</li>
+        <li><i className="k-chaser" />CHASER</li>
+      </ul>
       <div className="prompt">{running ? "TAP TO FLIP" : "TAP TO START"}</div>
     </button>
   );

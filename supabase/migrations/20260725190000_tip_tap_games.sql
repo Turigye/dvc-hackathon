@@ -2,7 +2,7 @@ create extension if not exists pgcrypto;
 
 create table public.games (
   id uuid primary key default gen_random_uuid(),
-  slug text not null unique check (slug in ('stack', 'slice', 'color-rings')),
+  slug text not null unique,
   label text not null,
   score_cap integer not null check (score_cap > 0),
   created_at timestamptz not null default now()
@@ -39,7 +39,8 @@ alter table public.scores enable row level security;
 -- authenticated server routes using the service role; RLS remains a protective default.
 
 insert into public.games (slug, label, score_cap) values
-  ('stack', 'Stack', 4000),
+  ('switchback', 'Switchback', 4000),
+  ('skyline', 'Skyline', 4000),
   ('slice', 'Slice', 9000),
   ('color-rings', 'Color Rings', 3000)
 on conflict (slug) do update set label = excluded.label, score_cap = excluded.score_cap;
