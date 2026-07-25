@@ -1,4 +1,4 @@
-export const gameSlugs = ["burn-in", "lcd-run", "signal-lock"] as const;
+export const gameSlugs = ["stack", "slice", "color-rings"] as const;
 
 export type GameSlug = (typeof gameSlugs)[number];
 
@@ -6,15 +6,15 @@ export type GameDefinition = {
   slug: GameSlug;
   title: string;
   kicker: string;
-  accent: "phosphor" | "lcd" | "cobalt";
+  accent: "magenta" | "acid" | "electric";
   description: string;
   scoreCap: number;
 };
 
 export const games: GameDefinition[] = [
-  { slug: "burn-in", title: "Burn-In", kicker: "Tap where it burned.", accent: "phosphor", description: "Phosphor recall", scoreCap: 2_560 },
-  { slug: "lcd-run", title: "LCD Run", kicker: "Tap to switch lanes.", accent: "lcd", description: "Lane survival", scoreCap: 1_800 },
-  { slug: "signal-lock", title: "Signal Lock", kicker: "Hold the signal.", accent: "cobalt", description: "Frequency control", scoreCap: 4_800 },
+  { slug: "stack", title: "Stack", kicker: "Tap to drop.", accent: "magenta", description: "Precision tower", scoreCap: 4_000 },
+  { slug: "slice", title: "Slice", kicker: "Swipe to cut.", accent: "acid", description: "Blade combos", scoreCap: 9_000 },
+  { slug: "color-rings", title: "Color Rings", kicker: "Spin to match.", accent: "electric", description: "Colour reflex", scoreCap: 3_000 },
 ];
 
 export const isGameSlug = (value: string): value is GameSlug => gameSlugs.includes(value as GameSlug);

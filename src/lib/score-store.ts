@@ -6,9 +6,9 @@ export type LeaderboardResponse = { entries: LeaderboardEntry[]; playerRank: num
 type StoredScore = { game: GameSlug; deviceId: string; score: number; createdAt: number };
 
 const seeds: StoredScore[] = [
-  { game: "burn-in", deviceId: "jax", score: 640, createdAt: 1 }, { game: "burn-in", deviceId: "nova", score: 490, createdAt: 2 }, { game: "burn-in", deviceId: "kat", score: 360, createdAt: 3 },
-  { game: "lcd-run", deviceId: "neon", score: 62, createdAt: 4 }, { game: "lcd-run", deviceId: "ivy", score: 48, createdAt: 5 }, { game: "lcd-run", deviceId: "rae", score: 39, createdAt: 6 },
-  { game: "signal-lock", deviceId: "mika", score: 980, createdAt: 7 }, { game: "signal-lock", deviceId: "sol", score: 732, createdAt: 8 }, { game: "signal-lock", deviceId: "eon", score: 615, createdAt: 9 },
+  { game: "stack", deviceId: "jax", score: 320, createdAt: 1 }, { game: "stack", deviceId: "nova", score: 250, createdAt: 2 }, { game: "stack", deviceId: "kat", score: 180, createdAt: 3 },
+  { game: "slice", deviceId: "neon", score: 1240, createdAt: 4 }, { game: "slice", deviceId: "ivy", score: 890, createdAt: 5 }, { game: "slice", deviceId: "rae", score: 640, createdAt: 6 },
+  { game: "color-rings", deviceId: "mika", score: 260, createdAt: 7 }, { game: "color-rings", deviceId: "sol", score: 190, createdAt: 8 }, { game: "color-rings", deviceId: "eon", score: 140, createdAt: 9 },
 ];
 
 const memoryScores = [...seeds];
@@ -21,7 +21,9 @@ export function recordMemoryScore(game: GameSlug, deviceId: string, score: numbe
 }
 
 export function memoryLeaderboard(game: GameSlug, deviceId?: string): LeaderboardResponse {
-  const all = memoryScores.filter((score) => score.game === game).sort((a, b) => b.score - a.score || a.createdAt - b.createdAt);
+  const ranked = memoryScores.filter((score) => score.game === game).sort((a, b) => b.score - a.score || a.createdAt - b.createdAt);
+  const seen = new Set<string>();
+  const all = ranked.filter((score) => { if (seen.has(score.deviceId)) return false; seen.add(score.deviceId); return true; });
   const yours = all.filter((score) => score.deviceId === deviceId);
   const playerBest = yours[0]?.score ?? 0;
   const playerRank = playerBest ? all.findIndex((score) => score.score === playerBest && score.deviceId === deviceId) + 1 : null;
