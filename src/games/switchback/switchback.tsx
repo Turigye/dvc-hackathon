@@ -1,187 +1,117 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect -- the game loop drives state from rAF. */
 
-import { ArrowFatDown, Coin, Lightning, PersonSimpleRun, ShieldCheck, Warning } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "../types";
-import { createSwitchbackState, step, type Lane, type RunnerEntity, type SwitchbackState } from "./simulation";
-import styles from "./switchback.module.css";
+import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
+import { RAIL_OFFSET, SEGMENT_H, centre, railPoint, ribbonPath } from "./geometry";
 
-const freshState = () => createSwitchbackState({ seed: 17 });
+/** Where the runner sits vertically on screen, as a fraction of the viewBox. */
+const RUNNER_SCREEN_Y = 0.68;
+const VIEW_H = SEGMENT_H * (LOOKAHEAD + 1);
 
-type StyleVars = CSSProperties & Record<`--${string}`, string | number>;
-
+/**
+ * Blockout renderer. Flat shapes only — the art pass replaces this layer.
+ * All gameplay lives in `simulation.ts`; this file only draws state and
+ * forwards taps.
+ */
 export function Switchback({ active, onFinish }: GameProps) {
+  const [state, setState] = useState<SwitchbackState>(() => createSwitchbackState({ seed: 1, spawnEnabled: false }));
   const [running, setRunning] = useState(false);
-  const [view, setView] = useState<SwitchbackState>(freshState);
-  const state = useRef<SwitchbackState>(freshState());
+  const world = useRef(state);
+  const flip = useRef(false);
+  const started = useRef(0);
   const finish = useRef(onFinish);
-  const startedAt = useRef(0);
-  const lastInputAt = useRef(-Infinity);
-
-  useEffect(() => { finish.current = onFinish; }, [onFinish]);
+  useEffect(() => { finish.current = onFinish; });
 
   useEffect(() => {
     if (!running || !active) return;
     let frame = 0;
     let previous = performance.now();
-    const tick = (now: number) => {
-      const next = step(state.current, Math.min(64, now - previous), { move: 0 });
+    const loop = (now: number) => {
+      const dt = Math.min(64, now - previous);
       previous = now;
-      state.current = next;
-      setView(next);
+      const next = step(world.current, dt, { flip: flip.current });
+      flip.current = false;
+      world.current = next;
+      setState(next);
       if (next.failed) {
         setRunning(false);
-        navigator.vibrate?.([24, 36, 48]);
         finish.current({
           score: next.score,
-          durationMs: Math.max(1_000, Date.now() - startedAt.current),
-          label: "ROADBLOCK HIT",
+          durationMs: Math.max(1000, Date.now() - started.current),
+          label: next.bestCombo >= 4 ? `COMBO ×${next.bestCombo}` : `${segmentOf(next.progress)} SWITCHBACKS`,
         });
         return;
       }
-      frame = requestAnimationFrame(tick);
+      frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(tick);
+    frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [active, running]);
+  }, [running, active]);
 
-  useEffect(() => {
-    if (active) return;
-    const stop = window.setTimeout(() => setRunning(false), 0);
-    return () => window.clearTimeout(stop);
-  }, [active]);
+  useEffect(() => { if (!active) setRunning(false); }, [active]);
 
-  const move = (direction: -1 | 1, source: "pointer" | "click" | "keyboard") => {
+  const tap = () => {
     if (!active) return;
-    const now = performance.now();
-    if (source === "click" && now - lastInputAt.current < 250) return;
-    lastInputAt.current = now;
-
     if (!running) {
-      const initial = step(freshState(), 0, { move: direction });
-      state.current = initial;
-      setView(initial);
-      startedAt.current = Date.now();
+      const fresh = createSwitchbackState({ seed: (Date.now() % 100000) + 1 });
+      world.current = fresh;
+      started.current = Date.now();
+      setState(fresh);
       setRunning(true);
-      navigator.vibrate?.(8);
       return;
     }
-
-    const next = step(state.current, 0, { move: direction });
-    state.current = next;
-    setView(next);
-    navigator.vibrate?.(5);
+    flip.current = true;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(8);
   };
 
-  const onKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    move(event.key === "ArrowLeft" ? -1 : 1, "keyboard");
-  };
-
-  const roadShift = (view.distance * 420) % 90;
-  const runnerX = laneX(view.lane, 0.72);
+  const segment = segmentOf(state.progress);
+  const offset = offsetOf(state.progress);
+  const runner = railPoint(segment, offset, state.rail);
+  // Scroll the world so the runner stays at a fixed height on screen.
+  const cameraY = runner.y - VIEW_H * RUNNER_SCREEN_Y;
+  const first = Math.max(0, segment - 1);
+  const last = segment + LOOKAHEAD;
 
   return (
-    <div
-      className={styles.stage}
-      role="application"
-      aria-label="Switchback. Tap the left or right side to steer between three lanes and avoid obstacles."
-      onKeyDown={onKey}
-      style={{ "--road-shift": `${roadShift}px` } as StyleVars}
-    >
-      <div className={styles.road} aria-hidden="true">
-        <div className={styles.roadSurface} />
-        <div className={`${styles.laneLine} ${styles.laneLineLeft}`} />
-        <div className={`${styles.laneLine} ${styles.laneLineRight}`} />
-        {Array.from({ length: 12 }, (_, index) => (
-          <i key={index} className={styles.roadTick} style={{ "--tick": index } as StyleVars} />
-        ))}
+    <button type="button" className="stage switchback-stage" onPointerDown={tap} aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}>
+      <div className="hud">
+        <span>SCORE</span>
+        <strong>{String(state.score).padStart(3, "0")}</strong>
+        {state.combo > 1 && <em className="combo">COMBO ×{state.combo}</em>}
       </div>
 
-      <div className={styles.hud} aria-live="polite">
-        <span className={styles.high}>HI {Math.max(84, view.score).toString().padStart(3, "0")}</span>
-        <strong data-testid="switchback-score">{view.score.toString().padStart(3, "0")}</strong>
-      </div>
+      <svg className="switchback-view" viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
+        <polyline className="ribbon-edge" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
 
-      <div className={styles.powerHud} aria-label="Power-up status">
-        <span className={view.shieldCharges ? styles.powerActive : ""}><ShieldCheck weight="fill" /> {view.shieldCharges}</span>
-        <span className={view.boostMs > 0 ? styles.boostActive : ""}><Lightning weight="fill" /> {view.boostMs > 0 ? "2X" : "—"}</span>
-      </div>
+        {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
+          const { x, y } = centre(seg, 0);
+          return <circle key={`v${seg}`} className="vertex" cx={x} cy={y} r={3} />;
+        })}
 
-      <div className={styles.entityLayer} aria-hidden="true">
-        {view.entities.map((entity) => <GameEntity key={entity.id} entity={entity} />)}
-      </div>
+        {state.hazards.map((hazard) => {
+          const start = railPoint(hazard.segment, hazard.from, hazard.rail);
+          const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);
+          const mid = railPoint(hazard.segment, (hazard.from + Math.min(1, hazard.to)) / 2, hazard.rail);
+          return (
+            <g key={hazard.id} className={`hazard is-${hazard.kind}`}>
+              <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={9} strokeLinecap="round" />
+              <line className="telegraph" x1={mid.x} y1={mid.y - 46} x2={mid.x} y2={mid.y - 12} strokeWidth={4} />
+            </g>
+          );
+        })}
 
-      <div
-        className={`${styles.runner} ${view.boostMs > 0 ? styles.runnerBoost : ""} ${view.shieldCharges ? styles.runnerShield : ""}`}
-        style={{ left: `${runnerX}%`, "--lean": `${view.lane * 9}deg` } as StyleVars}
-        aria-hidden="true"
-      >
-        <PersonSimpleRun weight="fill" />
-      </div>
+        {state.pickups.filter((pickup) => !pickup.taken).map((pickup) => {
+          const { x, y } = railPoint(pickup.segment, pickup.at, pickup.rail);
+          return <circle key={pickup.id} className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />;
+        })}
 
-      {view.event && (
-        <div key={view.eventNonce} className={styles.event} aria-live="polite">
-          {eventLabel(view.event)}
-        </div>
-      )}
+        <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
+      </svg>
 
-      {!running && !view.failed && (
-        <div className={styles.instructions}>
-          <b>RUN THE BLUE</b>
-          <span>Tap left or right to change lanes.</span>
-          <span>Avoid red. Collect amber and cobalt.</span>
-          <div className={styles.controlDiagram}><span>← LEFT</span><span>RIGHT →</span></div>
-        </div>
-      )}
-
-      <button
-        type="button"
-        className={`${styles.control} ${styles.controlLeft}`}
-        aria-label={running ? "Move one lane left" : "Start and move left"}
-        onPointerDown={(event) => { event.preventDefault(); move(-1, "pointer"); }}
-        onClick={() => move(-1, "click")}
-      />
-      <button
-        type="button"
-        className={`${styles.control} ${styles.controlRight}`}
-        aria-label={running ? "Move one lane right" : "Start and move right"}
-        onPointerDown={(event) => { event.preventDefault(); move(1, "pointer"); }}
-        onClick={() => move(1, "click")}
-      />
-    </div>
+      <div className="prompt">{running ? "TAP TO FLIP" : "TAP TO START"}</div>
+    </button>
   );
-}
-
-function GameEntity({ entity }: { entity: RunnerEntity }) {
-  const x = laneX(entity.lane, entity.y);
-  const scale = Math.max(0.55, Math.min(1.28, 0.62 + entity.y * 0.78));
-  const style = { left: `${x}%`, top: `${entity.y * 100}%`, "--entity-scale": scale } as StyleVars;
-
-  if (entity.kind === "piston") {
-    return <div className={`${styles.entity} ${styles.piston}`} style={style}><i /><ArrowFatDown weight="fill" /></div>;
-  }
-  if (entity.kind === "spikes") {
-    return <div className={`${styles.entity} ${styles.spikes}`} style={style}><Warning weight="fill" /></div>;
-  }
-  if (entity.kind === "shield") {
-    return <div className={`${styles.entity} ${styles.pickup} ${styles.shield}`} style={style}><ShieldCheck weight="fill" /></div>;
-  }
-  if (entity.kind === "boost") {
-    return <div className={`${styles.entity} ${styles.pickup} ${styles.boost}`} style={style}><Lightning weight="fill" /></div>;
-  }
-  return <div className={`${styles.entity} ${styles.pickup} ${styles.coin}`} style={style}><Coin weight="fill" /></div>;
-}
-
-function laneX(lane: Lane, y: number) {
-  return 50 + lane * (10 + Math.max(0, y) * 11);
-}
-
-function eventLabel(event: NonNullable<SwitchbackState["event"]>) {
-  if (event === "shield") return "SHIELD UP";
-  if (event === "boost") return "BOOST 2X";
-  if (event === "coin") return "+5";
-  if (event === "smash") return "SMASH +3";
-  return "SHIELD SAVE";
 }

@@ -1,68 +1,140 @@
-import { describe, expect, it } from "vitest";
-import { createSwitchbackState, step, type RunnerEntity } from "./simulation";
+import { describe, expect, test } from "vitest";
+import {
+  auditSegment,
+  createSwitchbackState,
+  hazardCovers,
+  offsetOf,
+  segmentOf,
+  step,
+  MIN_TELEGRAPH_MS,
+  worstCaseTelegraphMs,
+  type Hazard,
+  type Rail,
+  type SwitchbackState,
+} from "./simulation";
 
-const obstacle = (overrides: Partial<RunnerEntity> = {}): RunnerEntity => ({
-  id: 1,
-  row: 1,
-  kind: "piston",
-  lane: 0,
-  safeLane: 1,
-  y: 0.69,
-  ...overrides,
+const idle = { flip: false };
+const run = (state: SwitchbackState, ms: number, flipAt: number[] = []) => {
+  let current = state;
+  for (let elapsed = 0; elapsed < ms; elapsed += 16) {
+    const flip = flipAt.some((mark) => mark >= elapsed && mark < elapsed + 16);
+    current = step(current, 16, { flip });
+  }
+  return current;
+};
+
+describe("ribbon geometry", () => {
+  test("crossing a vertex inverts the runner's rail without input", () => {
+    let state = createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0 });
+    while (segmentOf(state.progress) === 0) state = step(state, 16, idle);
+    expect(segmentOf(state.progress)).toBe(1);
+    expect(state.rail).toBe(1);
+  });
+
+  test("a tap immediately before a vertex cancels the fold", () => {
+    let state = createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0 });
+    while (offsetOf(state.progress) < 0.95 && segmentOf(state.progress) === 0) state = step(state, 16, idle);
+    state = step(state, 16, { flip: true });
+    while (segmentOf(state.progress) === 0) state = step(state, 16, idle);
+    expect(state.rail).toBe(0);
+  });
+
+  test("score advances one per vertex cleared", () => {
+    const state = run(createSwitchbackState({ seed: 5, spawnEnabled: false }), 8000);
+    expect(state.score).toBe(segmentOf(state.progress));
+  });
 });
 
-describe("Switchback endless-runner simulation", () => {
-  it("moves one lane per left/right input and clamps at the road edges", () => {
-    let state = createSwitchbackState({ spawnEnabled: false });
+describe("hazards", () => {
+  const piston = (rail: Rail): Hazard => ({ id: 1, kind: "piston", segment: 1, rail, from: 0.4, to: 0.49 });
 
-    state = step(state, 0, { move: -1 });
-    state = step(state, 0, { move: -1 });
-    expect(state.lane).toBe(-1);
-
-    state = step(state, 0, { move: 1 });
-    expect(state.lane).toBe(0);
+  test("a hazard on the runner's rail is lethal", () => {
+    // The fold at segment 1 puts a rail-0 runner onto rail 1, into the piston.
+    const state = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, hazards: [piston(1)] }), 6000);
+    expect(state.failed).toBe(true);
+    expect(state.failure).toBe("hazard");
   });
 
-  it("fails only when a hazard crosses the runner in the occupied lane", () => {
-    const hit = step(createSwitchbackState({ entities: [obstacle()], spawnEnabled: false }), 100, { move: 0 });
-    const avoided = step(createSwitchbackState({ entities: [obstacle({ lane: -1 })], spawnEnabled: false }), 100, { move: 0 });
-
-    expect(hit).toMatchObject({ failed: true, failure: "hazard" });
-    expect(avoided).toMatchObject({ failed: false });
+  test("the opposite rail survives the same hazard", () => {
+    const state = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, hazards: [piston(0)] }), 6000);
+    expect(state.failed).toBe(false);
   });
 
-  it("uses shield and boost pickups to protect the runner", () => {
-    const shielded = step(createSwitchbackState({ entities: [obstacle()], shieldCharges: 1, spawnEnabled: false }), 100, { move: 0 });
-    const boosted = step(createSwitchbackState({ entities: [obstacle()], boostMs: 1_000, spawnEnabled: false }), 100, { move: 0 });
-    const pickup = step(createSwitchbackState({ entities: [obstacle({ kind: "shield" })], spawnEnabled: false }), 100, { move: 0 });
-
-    expect(shielded).toMatchObject({ failed: false, shieldCharges: 0 });
-    expect(boosted).toMatchObject({ failed: false, obstaclesSmashed: 1 });
-    expect(pickup).toMatchObject({ failed: false, shieldCharges: 1 });
+  test("a sweeper is lethal on both rails, at different times", () => {
+    const sweeper: Hazard = { id: 2, kind: "sweeper", segment: 1, rail: 0, from: 0.3, to: 0.64, switchAt: 0.47 };
+    expect(hazardCovers(sweeper, 0, 0.35)).toBe(true);
+    expect(hazardCovers(sweeper, 1, 0.35)).toBe(false);
+    expect(hazardCovers(sweeper, 0, 0.55)).toBe(false);
+    expect(hazardCovers(sweeper, 1, 0.55)).toBe(true);
   });
 
-  it("spawns endless fair rows with an adjacent safe lane", () => {
-    let state = createSwitchbackState({ boostMs: 100_000 });
-    const rows = new Map<number, RunnerEntity[]>();
+  test("a shield absorbs one hit and is consumed", () => {
+    const state = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, shield: 1, hazards: [piston(1)] }), 6000);
+    expect(state.failed).toBe(false);
+    expect(state.shield).toBe(0);
+  });
+});
 
-    for (let tick = 0; tick < 180; tick += 1) {
-      state = step(state, 100, { move: 0 });
-      for (const entity of state.entities) {
-        const row = rows.get(entity.row) ?? [];
-        if (!row.some((item) => item.id === entity.id)) row.push(entity);
-        rows.set(entity.row, row);
+describe("fairness", () => {
+  test("every hazard is visible far longer than the minimum telegraph", () => {
+    expect(worstCaseTelegraphMs()).toBeGreaterThan(MIN_TELEGRAPH_MS);
+  });
+
+  test("no generated segment closes both rails, and none sits on a vertex", () => {
+    let audited = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      let state = createSwitchbackState({ seed });
+      for (let tick = 0; tick < 600; tick++) {
+        state = step(state, 16, idle);
+        if (state.failed) state = createSwitchbackState({ seed: seed * 31 + tick });
+      }
+      const bySegment = new Map<number, Hazard[]>();
+      for (const hazard of state.hazards) {
+        bySegment.set(hazard.segment, [...(bySegment.get(hazard.segment) ?? []), hazard]);
+      }
+      for (const hazards of bySegment.values()) {
+        expect(auditSegment(hazards).reason).toBe(null);
+        audited += 1;
       }
     }
+    expect(audited).toBeGreaterThan(50);
+  });
 
+  test("correct play survives a long run", () => {
+    let state = createSwitchbackState({ seed: 9 });
+    for (let tick = 0; tick < 3000 && !state.failed; tick++) {
+      const segment = segmentOf(state.progress);
+      const ahead = offsetOf(state.progress) + 0.03;
+      const here = state.rail;
+      const there: Rail = here === 0 ? 1 : 0;
+      const doomed = state.hazards.some((h) => h.segment === segment && hazardCovers(h, here, ahead));
+      const escapeSafe = !state.hazards.some((h) => h.segment === segment && hazardCovers(h, there, ahead));
+      state = step(state, 16, { flip: doomed && escapeSafe });
+    }
+    expect(state.score).toBeGreaterThan(20);
+  });
+});
+
+describe("risk, reward and determinism", () => {
+  test("clearing a hazard closely scores a near miss and builds combo", () => {
+    const hazard: Hazard = { id: 3, kind: "piston", segment: 1, rail: 1, from: 0.4, to: 0.49 };
+    const state = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 1, hazards: [hazard] }), 6000);
     expect(state.failed).toBe(false);
-    expect(rows.size).toBeGreaterThan(8);
-    const orderedRows = [...rows.entries()].sort(([a], [b]) => a - b).map(([, row]) => row);
-    for (const row of orderedRows) {
-      const hazards = row.filter((entity) => entity.kind === "piston" || entity.kind === "spikes");
-      expect(new Set(hazards.map((entity) => entity.lane)).size).toBeLessThanOrEqual(2);
-    }
-    for (let index = 1; index < orderedRows.length; index += 1) {
-      expect(Math.abs(orderedRows[index][0].safeLane - orderedRows[index - 1][0].safeLane)).toBeLessThanOrEqual(1);
-    }
+    expect(state.bestCombo).toBeGreaterThan(0);
+  });
+
+  test("identical seeds and inputs produce identical runs", () => {
+    const a = run(createSwitchbackState({ seed: 42 }), 5000, [1200, 2400, 3600]);
+    const b = run(createSwitchbackState({ seed: 42 }), 5000, [1200, 2400, 3600]);
+    expect(a.score).toBe(b.score);
+    expect(a.progress).toBeCloseTo(b.progress, 8);
+    expect(a.failed).toBe(b.failed);
+  });
+
+  test("frame rate does not change the outcome", () => {
+    const fast = run(createSwitchbackState({ seed: 7, spawnEnabled: false }), 4000);
+    let slow = createSwitchbackState({ seed: 7, spawnEnabled: false });
+    for (let tick = 0; tick < 80; tick++) slow = step(slow, 50, idle); // 80 x 50ms = 4000ms
+    expect(slow.progress).toBeCloseTo(fast.progress, 2);
   });
 });
