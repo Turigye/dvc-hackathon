@@ -58,6 +58,12 @@ function Frame({ state, label }: { state: SwitchbackState; label: string }) {
           const { x, y } = centre(seg, 0);
           return <circle key={seg} className="vertex" cx={x} cy={y} r={3} />;
         })}
+        {state.drags.map((drag) => {
+          const start = railPoint(drag.segment, drag.from, drag.rail);
+          const end = railPoint(drag.segment, drag.to, drag.rail);
+          return <line key={`d${drag.id}`} className="drag-band" x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
+        })}
+
         {state.hazards.map((hazard) => {
           const start = railPoint(hazard.segment, hazard.from, hazard.rail);
           const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);

@@ -13,6 +13,9 @@ export type Rail = 0 | 1;
 export type HazardKind = "piston" | "spikes" | "sweeper";
 export type PickupKind = "coin" | "shield" | "boost";
 
+/** A non-lethal slow band. Running through it drags you and lets the pursuer gain. */
+export type Drag = { id: number; segment: number; rail: Rail; from: number; to: number };
+
 export type Hazard = {
   id: number;
   kind: HazardKind;
@@ -49,9 +52,10 @@ export type SwitchbackState = {
   boostMs: number;
   hazards: Hazard[];
   pickups: Pickup[];
+  drags: Drag[];
   spawnedThrough: number;
   nextId: number;
-  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | "chaser" | null;
+  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | "chaser" | "drag" | null;
   eventNonce: number;
   failed: boolean;
   failure: "hazard" | "caught" | null;
@@ -83,8 +87,11 @@ const CHASER_MAX_GAP = 2.15;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
 const CHASER_CLOSE_BASE = 0.03;
 const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
+/** While dragging, you crawl and the pursuer closes far faster. This is the jeopardy. */
+const DRAG_SPEED = 0.55;
+const DRAG_CHASE_MULTIPLIER = 4.5;
 
-type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive">>;
+type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "drags">>;
 
 export function createSwitchbackState(options: Options = {}): SwitchbackState {
   const state: SwitchbackState = {
@@ -100,6 +107,7 @@ export function createSwitchbackState(options: Options = {}): SwitchbackState {
     boostMs: 0,
     hazards: options.hazards?.map((hazard) => ({ ...hazard })) ?? [],
     pickups: options.pickups?.map((pickup) => ({ ...pickup })) ?? [],
+    drags: options.drags?.map((drag) => ({ ...drag })) ?? [],
     spawnedThrough: 0,
     nextId: 1,
     event: null,
@@ -185,6 +193,13 @@ function spawnSegment(state: SwitchbackState, segment: number) {
     state.pickups.push({ id: state.nextId++, kind: kindPick, segment, rail: other(hazard.rail), at: Math.min(0.9, hazard.to + 0.06) });
   }
 
+  // Sometimes the open rail carries a drag band: surviving is still possible,
+  // but taking the lazy line costs you ground against the pursuer.
+  if (segment > 3 && random(state) < 0.34) {
+    const from = 0.2 + random(state) * 0.42;
+    state.drags.push({ id: state.nextId++, segment, rail: other(hazard.rail), from, to: Math.min(0.95, from + 0.24) });
+  }
+
   // A second hazard may never close the last open rail at the same point on
   // the segment — it is placed strictly after the first one clears.
   if (state.score > 40 && random(state) < 0.3) {
@@ -247,7 +262,9 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     const slice = Math.min(sliceMs, remaining);
     remaining -= slice;
     const before = state.progress;
-    state.progress += (speed * slice) / 1000;
+    const slowed = state.drags.some((drag) => drag.segment === segmentOf(before) && drag.rail === state.rail
+      && offsetOf(before) >= drag.from && offsetOf(before) <= drag.to);
+    state.progress += (speed * (slowed ? DRAG_SPEED : 1) * slice) / 1000;
 
     // Vertex crossed: the ribbon folds, so the runner's rail inverts.
     if (segmentOf(state.progress) !== segmentOf(before)) {
@@ -263,8 +280,11 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       state.chaseGap = CHASER_START_GAP;
       emit(state, "chaser");
     }
+    const dragging = state.drags.some((drag) => drag.segment === segmentOf(state.progress) && drag.rail === state.rail
+      && offsetOf(state.progress) >= drag.from && offsetOf(state.progress) <= drag.to);
+    if (dragging && state.event !== "drag") emit(state, "drag");
     if (state.chaserActive) {
-      state.chaseGap -= (chaserCloseRate(state.score) * slice) / 1000;
+      state.chaseGap -= (chaserCloseRate(state.score) * (dragging ? DRAG_CHASE_MULTIPLIER : 1) * slice) / 1000;
       if (state.chaseGap <= 0) {
         state.failed = true;
         state.failure = "caught";
@@ -315,6 +335,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
   const cutoff = segmentOf(state.progress) - 1;
   state.hazards = state.hazards.filter((hazard) => hazard.segment >= cutoff);
   state.pickups = state.pickups.filter((pickup) => pickup.segment >= cutoff);
+  state.drags = state.drags.filter((drag) => drag.segment >= cutoff);
   return state;
 }
 

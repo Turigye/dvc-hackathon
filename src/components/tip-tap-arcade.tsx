@@ -31,6 +31,7 @@ export function TipTapArcade() {
   const [deviceId, setDeviceId] = useState("");
   const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ stack: EMPTY, slice: EMPTY, "color-rings": EMPTY });
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
@@ -89,11 +90,11 @@ export function TipTapArcade() {
               key={card.key}
               data-index={index}
               ref={(element) => { if (element) cards.current.set(card.key, element); else cards.current.delete(card.key); }}
-              className={`card world-${game.accent}`}
+              className={`card world-${game.accent} ${playingKey === card.key ? "is-playing" : ""}`}
               aria-label={`${game.title} game`}
             >
               <div className="stage-host">
-                {card.slug === "stack" && <Switchback active={live} onFinish={(data) => void submit("stack", card.key, data)} />}
+                {card.slug === "stack" && <Switchback active={live} onFinish={(data) => void submit("stack", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
                 {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} />}
                 {card.slug === "color-rings" && <ColorRings active={live} onFinish={(data) => void submit("color-rings", card.key, data)} />}
               </div>

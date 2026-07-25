@@ -16,7 +16,7 @@ const VIEW_H = 212;
  * All gameplay lives in `simulation.ts`; this file only draws state and
  * forwards taps.
  */
-export function Switchback({ active, onFinish }: GameProps) {
+export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const [state, setState] = useState<SwitchbackState>(() => createSwitchbackState({ seed: 1, spawnEnabled: false }));
   const [running, setRunning] = useState(false);
   const world = useRef(state);
@@ -24,6 +24,7 @@ export function Switchback({ active, onFinish }: GameProps) {
   const started = useRef(0);
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
 
   useEffect(() => {
     if (!running || !active) return;
@@ -78,7 +79,7 @@ export function Switchback({ active, onFinish }: GameProps) {
   const last = segment + LOOKAHEAD;
 
   return (
-    <button type="button" className="stage switchback-stage" onPointerDown={tap} aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}>
+    <button type="button" className="stage switchback-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}>
       <div className="hud">
         <span>SCORE</span>
         <strong>{String(state.score).padStart(3, "0")}</strong>
@@ -100,6 +101,12 @@ export function Switchback({ active, onFinish }: GameProps) {
         {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
           const { x, y } = centre(seg, 0);
           return <circle key={`v${seg}`} className="vertex" cx={x} cy={y} r={3} />;
+        })}
+
+        {state.drags.map((drag) => {
+          const start = railPoint(drag.segment, drag.from, drag.rail);
+          const end = railPoint(drag.segment, drag.to, drag.rail);
+          return <line key={`d${drag.id}`} className="drag-band" x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
         })}
 
         {state.hazards.map((hazard) => {

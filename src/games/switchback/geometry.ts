@@ -8,10 +8,10 @@
  */
 
 export const SEGMENT_H = 52;
-export const SWING_LEFT = 18;
-export const SWING_RIGHT = 82;
+export const SWING_LEFT = 25;
+export const SWING_RIGHT = 75;
 /** Half the ribbon's width, in world units, measured perpendicular-ish. */
-export const RAIL_OFFSET = 11;
+export const RAIL_OFFSET = 10;
 
 export const vertexX = (segment: number) => (segment % 2 === 0 ? SWING_LEFT : SWING_RIGHT);
 

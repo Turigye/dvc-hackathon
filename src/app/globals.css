@@ -34,7 +34,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .hud span { display:block; color:var(--dim); font-size:.6rem; letter-spacing:.16em; }
 .hud strong { display:block; font-family:var(--font-display), sans-serif; font-size:3.1rem; font-weight:800; line-height:.95; letter-spacing:-.05em; font-variant-numeric:tabular-nums; text-shadow:0 4px 22px rgb(0 0 0 / .55); }
 .combo { display:inline-block; margin-top:4px; border-radius:999px; padding:3px 9px; background:var(--pop); color:#08070C; font-size:.6rem; font-style:normal; font-weight:700; letter-spacing:.1em; animation:pop 320ms ease-out; }
-.prompt { position:absolute; bottom:calc(150px + env(safe-area-inset-bottom)); left:0; right:0; z-index:3; text-align:center; color:var(--dim); font-size:.64rem; letter-spacing:.2em; pointer-events:none; }
+.prompt { position:absolute; top:46%; left:0; right:0; z-index:3; text-align:center; color:var(--dim); font-size:.64rem; letter-spacing:.2em; pointer-events:none; }
 .lives { position:absolute; top:calc(78px + env(safe-area-inset-top)); right:18px; z-index:3; display:flex; gap:5px; }
 .life { width:9px; height:9px; border-radius:50%; background:var(--pop); box-shadow:0 0 12px var(--pop); }
 .life.is-lost { background:rgb(255 255 255 / .2); box-shadow:none; }
@@ -102,9 +102,10 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .switchback-stage { touch-action:none; }
 .switchback-view { position:absolute; inset:0; width:100%; height:100%; }
 .ribbon { fill:none; stroke:#1B48E0; stroke-linejoin:round; stroke-linecap:round; }
+.drag-band { stroke:#7A4A12; stroke-opacity:.85; }
 .ribbon-wall { fill:none; stroke:#0A1F52; stroke-linejoin:round; stroke-linecap:round; }
-.centre-stripes { fill:none; stroke:#0A1F52; stroke-opacity:.85; stroke-width:2.5; stroke-dasharray:7 17; stroke-linecap:butt; }
-.rail-line { fill:none; stroke:#EDE7DC; stroke-width:2.2; stroke-linejoin:round; stroke-linecap:round; }
+.centre-stripes { fill:none; stroke:#0A1F52; stroke-opacity:.7; stroke-width:5; stroke-dasharray:7 41; stroke-linecap:butt; }
+.rail-line { fill:none; stroke:#EDE7DC; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round; }
 .vertex { fill:#EDE7DC; fill-opacity:.5; }
 .hazard line { stroke:#E8391B; }
 .hazard.is-sweeper line { stroke:#FF6B45; }
@@ -140,3 +141,20 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .frame svg { width:100%; aspect-ratio:100 / 212; border-radius:8px; background:linear-gradient(#132A6B, #0B0F1A); }
 .frame figcaption { display:grid; gap:1px; padding-top:6px; font-size:.62rem; color:rgb(237 231 220 / .62); }
 .frame figcaption b { color:#EDE7DC; }
+
+/* ---- Poster-style chrome. Hides while a run is in progress. ---- */
+.title-block, .board-strip, .swipe-cue { transition:opacity 220ms ease, transform 220ms ease; }
+.card.is-playing .title-block,
+.card.is-playing .board-strip,
+.card.is-playing .swipe-cue { opacity:0; transform:translateY(10px); pointer-events:none; }
+.card.is-playing .rail-item span,
+.card.is-playing .rail-item b { opacity:.3; }
+
+.world-cobalt .title-block { border:2px solid #EDE7DC; border-radius:4px; padding:10px 14px 12px; background:rgb(11 15 26 / .82); box-shadow:5px 5px 0 #E8391B; backdrop-filter:blur(6px); }
+.world-cobalt .title-block h2 { font-size:1.7rem; letter-spacing:-.03em; text-transform:uppercase; }
+.world-cobalt .title-block p { color:#F5A623; letter-spacing:.16em; text-transform:uppercase; }
+.world-cobalt .board-strip { gap:0; padding:0 18px; }
+.world-cobalt .board-strip span { border:1.5px solid rgb(237 231 220 / .3); border-radius:3px; margin-right:7px; padding:4px 8px; background:rgb(11 15 26 / .7); color:#EDE7DC; }
+.world-cobalt .board-strip b { color:#F5A623; }
+.world-cobalt .prompt { border:2px solid #EDE7DC; border-radius:3px; width:max-content; margin:0 auto; padding:7px 16px; background:rgb(11 15 26 / .84); color:#EDE7DC; font-weight:700; box-shadow:4px 4px 0 #E8391B; }
+.stage[data-running="true"] .prompt { opacity:0; }

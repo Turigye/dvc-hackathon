@@ -177,3 +177,26 @@ describe("the pursuer", () => {
     expect(state.chaseGap).toBeLessThanOrEqual(4.2);
   });
 });
+
+describe("drag bands", () => {
+  const band = { id: 90, segment: 1, rail: 1 as const, from: 0.25, to: 0.6 };
+
+  test("running through a drag band slows the runner", () => {
+    const clear = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0 }), 6000);
+    const dragged = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, drags: [band] }), 6000);
+    expect(dragged.progress).toBeLessThan(clear.progress);
+    expect(dragged.failed).toBe(false);
+  });
+
+  test("a drag band lets the pursuer close far faster", () => {
+    const base = { seed: 5, spawnEnabled: false, rail: 0 as const, chaserActive: true, chaseGap: 2 };
+    const clear = run(createSwitchbackState(base), 6000);
+    const dragged = run(createSwitchbackState({ ...base, drags: [band] }), 6000);
+    expect(dragged.chaseGap).toBeLessThan(clear.chaseGap);
+  });
+
+  test("drag bands are never lethal", () => {
+    const dragged = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, drags: [band] }), 20000);
+    expect(dragged.failure).not.toBe("hazard");
+  });
+});
