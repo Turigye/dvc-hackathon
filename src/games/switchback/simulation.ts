@@ -70,19 +70,19 @@ export type SwitchbackInput = { flip: boolean };
 /** Segments visible ahead of the runner. Also the spawn horizon. */
 export const LOOKAHEAD = 4;
 const BASE_SPEED = 0.5;
-const MAX_SPEED = 1.45;
+const MAX_SPEED = 1.12;
 const BOOST_MULTIPLIER = 1.35;
 /** Nothing lethal may appear with less warning than this. */
 export const MIN_TELEGRAPH_MS = 450;
 const NEAR_MISS_WINDOW = 0.12;
 
 /** The pursuer wakes once the player has found their footing. */
-const CHASER_WAKES_AT = 8;
-const CHASER_START_GAP = 3.2;
-const CHASER_MAX_GAP = 4.2;
+const CHASER_WAKES_AT = 6;
+const CHASER_START_GAP = 1.8;
+const CHASER_MAX_GAP = 2.15;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
-const CHASER_CLOSE_BASE = 0.055;
-const PUSHBACK = { "near-miss": 0.42, coin: 0.22, boost: 0.9 } as const;
+const CHASER_CLOSE_BASE = 0.03;
+const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
 
 type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive">>;
 
@@ -146,7 +146,7 @@ function pickKind(state: SwitchbackState, roll: number): HazardKind {
 }
 
 function spawnSegment(state: SwitchbackState, segment: number) {
-  const density = Math.min(0.96, 0.82 + state.score / 240);
+  const density = Math.min(0.92, 0.5 + segmentOf(state.progress) / 260);
   if (random(state) > density) return; // Dead air. Intensity needs troughs.
 
   const kind = pickKind(state, random(state));
@@ -169,15 +169,26 @@ function spawnSegment(state: SwitchbackState, segment: number) {
   const hazard = state.hazards[state.hazards.length - 1];
   const roll = random(state);
   const kindPick: PickupKind = roll < 0.14 ? "shield" : roll < 0.26 ? "boost" : "coin";
-  const at = hazard.to + 0.06;
-  if (at < 0.97 && (kindPick !== "coin" || random(state) < 0.75)) {
-    state.pickups.push({ id: state.nextId++, kind: kindPick, segment, rail: hazard.rail, at });
+  // The reward sits on the risky rail, but far enough past the hazard that the
+  // player can flip back onto it. Below ~0.16 the dodge and the pickup are the
+  // same instant and the reward is unreachable by construction.
+  const after = hazard.to + 0.2;
+  if (after <= 0.9) {
+    // Room to flip back onto the risky rail once the hazard has passed.
+    state.pickups.push({ id: state.nextId++, kind: kindPick, segment, rail: hazard.rail, at: after });
+  } else if (hazard.from >= 0.4) {
+    // No room after it — offer the reward before the hazard, on the rail the
+    // player must leave. Taking it means committing late to the dodge.
+    state.pickups.push({ id: state.nextId++, kind: kindPick, segment, rail: hazard.rail, at: hazard.from - 0.22 });
+  } else {
+    // Hazard fills the segment: put the reward on the open rail, clear of it.
+    state.pickups.push({ id: state.nextId++, kind: kindPick, segment, rail: other(hazard.rail), at: Math.min(0.9, hazard.to + 0.06) });
   }
 
   // A second hazard may never close the last open rail at the same point on
   // the segment — it is placed strictly after the first one clears.
   if (state.score > 40 && random(state) < 0.3) {
-    const gapStart = Math.min(0.95, hazard.to + 0.14);
+    const gapStart = Math.min(0.95, hazard.to + 0.34);
     if (gapStart < 0.82) {
       const at2 = gapStart + random(state) * (0.95 - gapStart);
       state.hazards.push({ id: state.nextId++, kind: "piston", segment, rail: other(hazard.rail), from: at2, to: at2 + 0.09 });
@@ -202,7 +213,7 @@ function pushBack(state: SwitchbackState, segments: number) {
 
 /** How fast the pursuer closes, in segments per second, at the current score. */
 export function chaserCloseRate(score: number) {
-  return CHASER_CLOSE_BASE + Math.min(0.075, score / 2400);
+  return CHASER_CLOSE_BASE + Math.min(0.045, score / 4200);
 }
 
 function emit(state: SwitchbackState, event: SwitchbackState["event"]) {
@@ -242,7 +253,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     if (segmentOf(state.progress) !== segmentOf(before)) {
       state.rail = other(state.rail);
       state.score += 1;
-      state.speed = Math.min(MAX_SPEED, BASE_SPEED + state.score * 0.012);
+      state.speed = Math.min(MAX_SPEED, BASE_SPEED + segmentOf(state.progress) * 0.0075);
       emit(state, "vertex");
       spawnAhead(state);
     }
@@ -293,7 +304,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
 
     for (const pickup of state.pickups) {
       if (pickup.taken || pickup.segment !== segment) continue;
-      if (pickup.rail !== state.rail || Math.abs(at - pickup.at) > 0.05) continue;
+      if (pickup.rail !== state.rail || Math.abs(at - pickup.at) > 0.085) continue;
       pickup.taken = true;
       if (pickup.kind === "coin") { state.coins += 1; state.score += 5; pushBack(state, PUSHBACK.coin); emit(state, "coin"); }
       if (pickup.kind === "shield") { state.shield = Math.min(3, state.shield + 1); emit(state, "shield"); }

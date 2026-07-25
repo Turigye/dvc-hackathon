@@ -102,7 +102,9 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .switchback-stage { touch-action:none; }
 .switchback-view { position:absolute; inset:0; width:100%; height:100%; }
 .ribbon { fill:none; stroke:#1B48E0; stroke-linejoin:round; stroke-linecap:round; }
-.rail-line { fill:none; stroke:#EDE7DC; stroke-opacity:.6; stroke-width:1.6; stroke-linejoin:round; stroke-dasharray:5 4; }
+.ribbon-wall { fill:none; stroke:#0A1F52; stroke-linejoin:round; stroke-linecap:round; }
+.centre-stripes { fill:none; stroke:#0A1F52; stroke-opacity:.85; stroke-width:2.5; stroke-dasharray:7 17; stroke-linecap:butt; }
+.rail-line { fill:none; stroke:#EDE7DC; stroke-width:2.2; stroke-linejoin:round; stroke-linecap:round; }
 .vertex { fill:#EDE7DC; fill-opacity:.5; }
 .hazard line { stroke:#E8391B; }
 .hazard.is-sweeper line { stroke:#FF6B45; }

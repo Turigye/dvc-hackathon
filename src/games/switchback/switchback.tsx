@@ -7,7 +7,7 @@ import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type Switc
 import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
 
 /** Where the runner sits vertically on screen, as a fraction of the viewBox. */
-const RUNNER_SCREEN_Y = 0.68;
+const RUNNER_SCREEN_Y = 0.55;
 /** viewBox is 100 wide; height tracks a tall phone so `slice` does not crop the runner. */
 const VIEW_H = 212;
 
@@ -91,7 +91,9 @@ export function Switchback({ active, onFinish }: GameProps) {
       </div>
 
       <svg className="switchback-view" viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <polyline className="ribbon-wall" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} transform="translate(0 5)" />
         <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
+        <polyline className="centre-stripes" points={ribbonPath(first, last)} />
         <polyline className="rail-line" points={railPath(first, last, 0)} />
         <polyline className="rail-line" points={railPath(first, last, 1)} />
 

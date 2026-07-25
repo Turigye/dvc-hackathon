@@ -17,7 +17,7 @@ import {
  */
 
 const VIEW_H = 212;
-const RUNNER_SCREEN_Y = 0.68;
+const RUNNER_SCREEN_Y = 0.55;
 const FRAME_MS = 16;
 
 /** A competent autopilot: flip only when the current rail is about to be lethal. */
@@ -49,7 +49,9 @@ function Frame({ state, label }: { state: SwitchbackState; label: string }) {
   return (
     <figure className="frame">
       <svg viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={label}>
+        <polyline className="ribbon-wall" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} transform="translate(0 5)" />
         <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
+        <polyline className="centre-stripes" points={ribbonPath(first, last)} />
         <polyline className="rail-line" points={railPath(first, last, 0)} />
         <polyline className="rail-line" points={railPath(first, last, 1)} />
         {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
