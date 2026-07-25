@@ -1,58 +1,65 @@
 # Game Mechanics — Tip Tap Games
 
-> **Claude owns this file.** Three original mechanics, none from the brief's reference list. Each is nostalgic *because of how it behaves*, not how it's decorated. Implement against the `GameProps` contract in `COORDINATION.md`.
+> **Claude owns this file.** Supersedes the previous Burn-In / LCD Run / Signal Lock spec, which the user rated 2/10 — clever but not fun, and visually indistinguishable from each other.
 
-Three different input models on purpose: **tap-recall**, **drag-hold**, **rhythmic tap**. If two games feel the same in the thumb, one of them is wrong.
+Three mechanics chosen for **proven fun over invention**, each with a different input model. If two games feel the same in the thumb, one of them is wrong.
 
-Build order: `burn-in` → `lcd-run` → `signal-lock`. The feed must work with one game; each additional mechanic is independently droppable.
+| Game | Input | Feel | World |
+| --- | --- | --- | --- |
+| Stack | Tap to drop | Precision, mounting tension | Magenta |
+| Slice | Swipe to cut | Kinetic, messy, combo-driven | Acid |
+| Color Rings | Tap to spin | Reflex, pattern reading | Electric |
+
+Each is endless, one-thumb, and readable in two seconds. Any one can be cut without breaking the feed.
 
 ---
 
-## 1. BURN-IN — `src/games/burn-in/`
+## 1. STACK — `src/games/stack.tsx`
 
-**Rule text (on card):** `Tap where it burned.`
+**Rule text:** `Tap to drop.`
 
-A shape flashes at full phosphor brightness on the grid, then decays to a faint ghost and vanishes. Tap the cell where it was. Each round adds one more flash to the sequence before you answer — recall the whole chain, in order.
+A block slides across the top of the tower. Tap to drop it. Whatever hangs over the edge is sliced off and tumbles away, so the tower narrows every turn. Miss entirely and the run ends.
 
-- **Why it's nostalgic:** CRT phosphor persistence *is* the mechanic. The decay curve is the gameplay, not a filter.
-- **Loop:** flash sequence (n cells) → input phase → correct advances to n+1, wrong ends the run.
-- **Difficulty:** decay time shortens from 900ms toward 260ms; grid grows 3×3 → 4×4 at round 6.
-- **Score:** `round² × 10`. Big late rounds, so the board rewards depth not grinding.
-- **Attract mode:** autopilot plays a flawless 4-round sequence, then deliberately misses and restarts.
-- **Feel note:** the ghost must linger just long enough to feel *almost* readable. If recall is comfortable, it's too slow.
+- **Score:** 10 per block, +25 per **perfect** (a drop with no trim). Perfects chain into a visible combo.
+- **Difficulty:** slide speed 38 → 126 units/sec.
+- **Juice:** hue advances 13° per block, so the tower is a gradient that the player builds. Trimmed shards fall and fade. Perfect drops flash a combo pill.
+- **Why it works:** the tension is self-inflicted — every block you place makes the next one harder. That is the whole game.
 
-## 2. LCD RUN — `src/games/lcd-run/`
+## 2. SLICE — `src/games/slice.tsx`
 
-**Rule text (on card):** `Tap to switch lanes.`
+**Rule text:** `Swipe to cut.`
 
-Three lanes. Your marker sits at the bottom; obstacles advance toward you **one discrete step at a time**, on a fixed tick — never smoothly interpolated. Tap to hop lanes. Survive.
+Shapes are lobbed up from the bottom of the screen. Swipe through them to cut. Cutting several in one unbroken stroke multiplies the score. Let three fall past you and the run ends.
 
-- **Why it's nostalgic:** Tiger Electronics handhelds could only light fixed segments, so everything moved in visible steps. We reproduce that constraint exactly: positions snap, they never tween. Off-cells render as low-alpha ghosts, like an unlit LCD segment.
-- **Loop:** tick advances all obstacles one row; collision ends the run; each survived tick scores.
-- **Difficulty:** tick interval 520ms → 180ms; obstacle density rises from 1 to 2 per row.
-- **Score:** `+1` per tick survived, `+5` per near-miss (obstacle clears the lane you just left).
-- **Attract mode:** autopilot survives ~20 ticks with visibly late dodges, then dies.
-- **Feel note:** the step must be *audible* in the visuals — a hard snap, zero transition. Any CSS easing here kills the whole idea.
+- **Score:** 10 per shape × the current stroke multiplier. A four-shape stroke is worth far more than four separate cuts.
+- **Difficulty:** spawn interval 1.5s → 0.52s; two shapes at once past 400 points.
+- **Juice:** a glowing swipe trail follows the finger; every cut splits the shape into two halves that spin apart and fade. Lives are three dots that go dark.
+- **Why it works:** the combo rule rewards greed — waiting for a second shape to line up is a real decision made under time pressure.
 
-## 3. SIGNAL LOCK — `src/games/signal-lock/`
+## 3. COLOR RINGS — `src/games/color-rings.tsx`
 
-**Rule text (on card):** `Hold the signal.`
+**Rule text:** `Spin to match.`
 
-A tuning bar of static. Drag your thumb to move the tuner; a hidden target frequency drifts continuously. Keep the tuner inside the lock zone to accumulate signal strength. The target drifts faster as strength climbs.
+The ball falls through a column of four-colour rings. Tap to spin the next ring so the segment the ball passes through matches the ball's colour. The ball changes colour every time it clears a ring.
 
-- **Why it's nostalgic:** analog dial tuning — the hunt for a clear channel through static. The only game of the three that scores *continuously* rather than in discrete events.
-- **Loop:** in-zone accrues score and narrows the zone; out-of-zone bleeds a signal meter; empty meter ends the run.
-- **Difficulty:** drift speed scales with strength; lock zone narrows 18% → 6% of the bar.
-- **Score:** `+2` per 100ms locked, ×2 multiplier past 3 seconds of unbroken lock.
-- **Attract mode:** autopilot holds lock for ~6 seconds, loses it, recovers once, then drains.
-- **Feel note:** static intensity is the feedback channel — clean and quiet in the zone, loud and noisy outside it. Render static as a cheap CSS/canvas noise field, not a per-pixel JS loop.
+- **Score:** 10 per ring cleared.
+- **Difficulty:** fall speed 20 → 52 units/sec.
+- **Juice:** the ball pulses and recolours on every clear; cleared rings dim behind it.
+- **Why it works:** it is a pure colour-matching reflex with a rotation puzzle layered on. The read is instant and the failure is always your own fault.
 
 ---
 
 ## Shared feel rules
 
-- **First touch always takes over instantly**, mid-frame, from attract mode. Never a "tap to start" gate.
-- **Failure is loud and immediate** — vermilion, `GAME OVER`, ≤180ms. No consolation copy.
-- **A new personal best interrupts** with amber and `NEW HI-SCORE` before the initials sheet opens.
-- **Initials sheet opens only on a qualifying run** — top 10 for that game, or any personal best. Otherwise the run ends straight back into playable state.
-- **Every game is playable one-handed at 390×844**, with the entire interactive area inside the bottom 60% of the viewport. Nothing critical sits under the notch or above the thumb arc.
+- **No tap-to-start gate beyond the first input.** The first tap or swipe both starts the run and counts as the first move.
+- **Failure is immediate and loud** — `GAME OVER`, the score at display scale, one primary action.
+- **The game fills the card.** Chrome (title, rail, board strip) overlays it and never takes vertical flow.
+- **Hard stop when the card is not active.** Cancel every rAF and timer — zombie loops across cards remain the likeliest bug.
+- **One-handed at 390×844.** All interaction sits inside the thumb arc; nothing critical under the notch.
+
+## Known gaps
+
+- **Attract mode** is specced but unbuilt — an on-screen, untouched card should demo-play itself.
+- **Three-letter initials** are unbuilt. Identity is still device-ID + optional Google.
+- **Audio** is absent. Short synthesized WebAudio blips behind an explicit unmute would add a lot of juice for little cost.
+- **Haptics** — `navigator.vibrate` on drop / cut / clear is a two-line win on Android.

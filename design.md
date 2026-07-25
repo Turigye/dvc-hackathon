@@ -13,16 +13,18 @@
 
 ## Creative direction
 
-- **Design thesis:** The arcade cabinet, shrunk to a thumb. We are not skinning a modern app in retro decoration — we are rebuilding the *feedback language* of a coin-op machine: instant response, loud scoring, a permanently visible high-score board, and a cabinet that is always already playing.
-- **Era anchor:** Late-80s / early-90s coin-op arcade and the first handheld LCDs. Phosphor glow, CRT scanline, segment-LCD ghosting, attract mode, `HI-SCORE`, three-letter initials.
-- **Tone:** Terse, mechanical, confident. Machine voice, never marketing voice. `INSERT COIN`, not "Get started!". `GAME OVER`, not "Nice try!".
-- **Visual metaphor:** A CRT that never turns off. Each card is a different cabinet on the same arcade floor.
-- **What must feel distinct — the four nostalgia mechanics:**
-  1. **Three-letter initials, not usernames.** A qualifying run opens an `AAA` character picker. Instantly nostalgic, and it solves guest leaderboard identity with no login wall.
-  2. **Attract mode.** A card on screen but not yet touched demo-plays itself, exactly like an idle cabinet. First touch takes over mid-frame.
-  3. **Phosphor + scanline treatment.** A single fixed CSS overlay, never a per-frame JS effect.
-  4. **Arcade score pop.** Points punch up, scale, drift, fade. Under 400ms.
-- **What to avoid:** Default purple/green AI gradients, stock imagery, copied layouts, decorative filler, excessive pills, unmeasured heavy animation. **Also banned here:** pixel-art clip art, "8-bit" emoji, autoplaying chiptune, and any nostalgia that is a sticker rather than a behavior.
+> **Direction reset, 2026-07-25 21:50 EAT.** The previous CRT-phosphor direction was mine and it was wrong: it produced three near-identical monochrome cards that the user correctly called generic and soulless. On a Shorts-style feed, every card must feel like a different world.
+
+- **Design thesis:** A vertical feed of vivid, self-contained colour worlds. Each card is loud, saturated and instantly distinguishable from the one above it — the way consecutive Shorts are. The game fills the screen; chrome floats on top of it and never takes vertical flow.
+- **Tone:** Fast, bright, confident, a little brash. Machine-terse copy — `GAME OVER`, `BEST`, `RANK` — set against big display type.
+- **Visual metaphor:** A neon arcade floor seen one cabinet at a time, each lit in its own colour.
+- **Nostalgia lives in behavior, not skin.** Attract mode, three-letter initials, `GAME OVER`, a permanently visible high-score board. Never pixel-art decoration, "8-bit" emoji or chiptune.
+- **What must feel distinct:**
+  1. **Three colour worlds.** Magenta (Stack), acid (Slice), electric (Color Rings). Each drives its own accent, glow and background gradient through `--pop` and `--bg1/--bg2`.
+  2. **Full-bleed play.** The stage is `inset: 0`. HUD, title, rail and board strip are overlaid with `pointer-events: none` except the buttons.
+  3. **Juice as a first-class feature.** Score pop, combo pills, swipe trails, split-apart halves, falling shards, glow on every accent element.
+  4. **The right-hand rail** carries BEST / RANK / SHARE — the Shorts action-rail position, but scoring rather than vanity metrics.
+- **What to avoid:** Default purple/green AI gradients, stock imagery, copied layouts, decorative filler, excessive pills, unmeasured heavy animation, and any card that looks like its neighbour.
 
 ## Reference ledger
 
@@ -52,18 +54,19 @@ Two families only, both loaded locally through `next/font`.
 
 ### Color roles
 
+Three worlds, each supplying `--bg1`, `--bg2` and `--pop`. Shared neutrals sit on top of all three.
+
 | Role | Value | Usage | Contrast check |
 | --- | --- | --- | --- |
-| Canvas | `#080B0A` | Feed background / cabinet body | — |
-| Surface | `#101614` | Card substrate, bottom sheet | — |
-| Primary text | `#EAF2EC` | Rule text, titles | 16.1:1 on canvas ✓ |
-| Muted text | `#7E8F82` | Secondary telemetry, ghost state | 5.1:1 on canvas ✓ AA |
-| Border | `#23302A` | 2px hard rules | Decorative only |
-| Accent — phosphor green | `#4CE07A` | Live score, active state, success | 11.4:1 on canvas ✓ |
-| Accent — amber | `#FFB000` | HI-SCORE, personal best | 10.2:1 on canvas ✓ |
-| Alert — vermilion | `#FF4A26` | GAME OVER, miss, life lost | 5.4:1 on canvas ✓ AA |
+| Ink | `#08070C` | Feed background, vignette floor | — |
+| Paper | `#FFFFFF` | Primary text, score display | 19.4:1 on ink ✓ |
+| Dim | `rgb(255 255 255 / .62)` | Secondary labels, rule text | 7.2:1 on ink ✓ |
+| Line | `rgb(255 255 255 / .18)` | Hairline borders, pills | Decorative only |
+| Magenta world | `--bg1:#25062F` `--bg2:#8B1BA6` `--pop:#FF2E88` | Stack | Pop 6.1:1 on bg1 ✓ |
+| Acid world | `--bg1:#08251A` `--bg2:#0E8A57` `--pop:#C6FF00` | Slice | Pop 14.8:1 on bg1 ✓ |
+| Electric world | `--bg1:#040F35` `--bg2:#1157C7` `--pop:#00E5FF` | Color Rings | Pop 11.9:1 on bg1 ✓ |
 
-**Semantic rule:** green = you are doing well. Amber = the record. Vermilion = you lost something. Maximum two accents visible per card at once. Never encode state by colour alone — always colour + copy or icon.
+**Semantic rule:** `--pop` is the world's single accent — score, glow, active state, primary action. Never encode state by colour alone; always colour plus copy or icon.
 
 ### Layout and depth
 
