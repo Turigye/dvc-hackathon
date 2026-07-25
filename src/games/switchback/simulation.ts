@@ -51,11 +51,18 @@ export type SwitchbackState = {
   pickups: Pickup[];
   spawnedThrough: number;
   nextId: number;
-  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | null;
+  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | "chaser" | null;
   eventNonce: number;
   failed: boolean;
-  failure: "hazard" | null;
+  failure: "hazard" | "caught" | null;
   spawnEnabled: boolean;
+  /**
+   * Distance the pursuer trails the runner, in segments. It closes on its own,
+   * and is pushed back by risk — near misses, coins, boosts. Playing safe is
+   * therefore the losing strategy.
+   */
+  chaseGap: number;
+  chaserActive: boolean;
 };
 
 export type SwitchbackInput = { flip: boolean };
@@ -69,7 +76,15 @@ const BOOST_MULTIPLIER = 1.35;
 export const MIN_TELEGRAPH_MS = 450;
 const NEAR_MISS_WINDOW = 0.12;
 
-type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield">>;
+/** The pursuer wakes once the player has found their footing. */
+const CHASER_WAKES_AT = 8;
+const CHASER_START_GAP = 3.2;
+const CHASER_MAX_GAP = 4.2;
+/** Segments per second the gap closes on its own, before risk pushes it back. */
+const CHASER_CLOSE_BASE = 0.055;
+const PUSHBACK = { "near-miss": 0.42, coin: 0.22, boost: 0.9 } as const;
+
+type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive">>;
 
 export function createSwitchbackState(options: Options = {}): SwitchbackState {
   const state: SwitchbackState = {
@@ -92,6 +107,8 @@ export function createSwitchbackState(options: Options = {}): SwitchbackState {
     failed: false,
     failure: null,
     spawnEnabled: options.spawnEnabled ?? true,
+    chaseGap: options.chaseGap ?? CHASER_START_GAP,
+    chaserActive: options.chaserActive ?? false,
   };
   if (state.spawnEnabled && !options.hazards) spawnAhead(state);
   return state;
@@ -177,6 +194,17 @@ function spawnAhead(state: SwitchbackState) {
   }
 }
 
+/** Risk buys distance from the pursuer. */
+function pushBack(state: SwitchbackState, segments: number) {
+  if (!state.chaserActive) return;
+  state.chaseGap = Math.min(CHASER_MAX_GAP, state.chaseGap + segments);
+}
+
+/** How fast the pursuer closes, in segments per second, at the current score. */
+export function chaserCloseRate(score: number) {
+  return CHASER_CLOSE_BASE + Math.min(0.075, score / 2400);
+}
+
 function emit(state: SwitchbackState, event: SwitchbackState["event"]) {
   state.event = event;
   state.eventNonce += 1;
@@ -219,6 +247,21 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       spawnAhead(state);
     }
 
+    if (!state.chaserActive && state.score >= CHASER_WAKES_AT) {
+      state.chaserActive = true;
+      state.chaseGap = CHASER_START_GAP;
+      emit(state, "chaser");
+    }
+    if (state.chaserActive) {
+      state.chaseGap -= (chaserCloseRate(state.score) * slice) / 1000;
+      if (state.chaseGap <= 0) {
+        state.failed = true;
+        state.failure = "caught";
+        state.combo = 0;
+        break;
+      }
+    }
+
     const segment = segmentOf(state.progress);
     const at = offsetOf(state.progress);
 
@@ -243,6 +286,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
         state.combo += 1;
         state.bestCombo = Math.max(state.bestCombo, state.combo);
         state.score += 2 * Math.min(5, state.combo);
+        pushBack(state, PUSHBACK["near-miss"]);
         emit(state, "near-miss");
       }
     }
@@ -251,9 +295,9 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       if (pickup.taken || pickup.segment !== segment) continue;
       if (pickup.rail !== state.rail || Math.abs(at - pickup.at) > 0.05) continue;
       pickup.taken = true;
-      if (pickup.kind === "coin") { state.coins += 1; state.score += 5; emit(state, "coin"); }
+      if (pickup.kind === "coin") { state.coins += 1; state.score += 5; pushBack(state, PUSHBACK.coin); emit(state, "coin"); }
       if (pickup.kind === "shield") { state.shield = Math.min(3, state.shield + 1); emit(state, "shield"); }
-      if (pickup.kind === "boost") { state.boostMs = 2600; emit(state, "boost"); }
+      if (pickup.kind === "boost") { state.boostMs = 2600; pushBack(state, PUSHBACK.boost); emit(state, "boost"); }
     }
   }
 

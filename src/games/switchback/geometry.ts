@@ -42,3 +42,15 @@ export function ribbonPath(fromSegment: number, toSegment: number) {
   }
   return points.join(" ");
 }
+
+/** Polyline for one rail across a range of segments — the two lines the runner moves between. */
+export function railPath(fromSegment: number, toSegment: number, rail: 0 | 1) {
+  const points: string[] = [];
+  for (let segment = fromSegment; segment <= toSegment; segment++) {
+    for (const offset of [0, 1]) {
+      const { x, y } = railPoint(segment, offset, rail);
+      points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+    }
+  }
+  return points.join(" ");
+}

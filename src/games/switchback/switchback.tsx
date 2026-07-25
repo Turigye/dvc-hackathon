@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "../types";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
-import { RAIL_OFFSET, centre, railPoint, ribbonPath } from "./geometry";
+import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
 
 /** Where the runner sits vertically on screen, as a fraction of the viewBox. */
 const RUNNER_SCREEN_Y = 0.68;
@@ -41,7 +41,7 @@ export function Switchback({ active, onFinish }: GameProps) {
         finish.current({
           score: next.score,
           durationMs: Math.max(1000, Date.now() - started.current),
-          label: next.bestCombo >= 4 ? `COMBO ×${next.bestCombo}` : `${segmentOf(next.progress)} SWITCHBACKS`,
+          label: next.failure === "caught" ? "CAUGHT" : next.bestCombo >= 4 ? `COMBO ×${next.bestCombo}` : `${segmentOf(next.progress)} SWITCHBACKS`,
         });
         return;
       }
@@ -83,11 +83,17 @@ export function Switchback({ active, onFinish }: GameProps) {
         <span>SCORE</span>
         <strong>{String(state.score).padStart(3, "0")}</strong>
         {state.combo > 1 && <em className="combo">COMBO ×{state.combo}</em>}
+        {state.chaserActive && (
+          <em className={`chase-meter ${state.chaseGap < 1.2 ? "is-close" : ""}`} aria-label="Distance from the pursuer">
+            <i style={{ width: `${Math.max(4, Math.min(100, (state.chaseGap / 4.2) * 100))}%` }} />
+          </em>
+        )}
       </div>
 
       <svg className="switchback-view" viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
-        <polyline className="ribbon-edge" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
+        <polyline className="rail-line" points={railPath(first, last, 0)} />
+        <polyline className="rail-line" points={railPath(first, last, 1)} />
 
         {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
           const { x, y } = centre(seg, 0);
@@ -97,11 +103,14 @@ export function Switchback({ active, onFinish }: GameProps) {
         {state.hazards.map((hazard) => {
           const start = railPoint(hazard.segment, hazard.from, hazard.rail);
           const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);
-          const mid = railPoint(hazard.segment, (hazard.from + Math.min(1, hazard.to)) / 2, hazard.rail);
           return (
             <g key={hazard.id} className={`hazard is-${hazard.kind}`}>
-              <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={9} strokeLinecap="round" />
-              <line className="telegraph" x1={mid.x} y1={mid.y - 46} x2={mid.x} y2={mid.y - 12} strokeWidth={4} />
+              <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
+              {hazard.kind === "sweeper" && (() => {
+                const other = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail === 0 ? 1 : 0);
+                const pivot = railPoint(hazard.segment, hazard.switchAt ?? hazard.from, hazard.rail === 0 ? 1 : 0);
+                return <line className="sweep-arm" x1={pivot.x} y1={pivot.y} x2={other.x} y2={other.y} strokeWidth={10} strokeLinecap="round" />;
+              })()}
             </g>
           );
         })}
@@ -110,6 +119,13 @@ export function Switchback({ active, onFinish }: GameProps) {
           const { x, y } = railPoint(pickup.segment, pickup.at, pickup.rail);
           return <circle key={pickup.id} className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />;
         })}
+
+        {state.chaserActive && (() => {
+          const trail = Math.max(0, state.progress - state.chaseGap);
+          const spot = railPoint(segmentOf(trail), offsetOf(trail), state.rail);
+          const close = state.chaseGap < 1.2;
+          return <circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />;
+        })()}
 
         <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
       </svg>

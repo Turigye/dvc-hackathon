@@ -42,6 +42,16 @@ The current build has no reason to do anything but survive. Add one:
 - **Coins sit on the risky rail**, never the safe one. Invert what is currently built.
 - **Combo breaks on a safe, wide pass.** Playing it safe costs you the multiplier — that is the tension.
 
+## The pursuer — user's idea, adopted
+
+A pursuer travels the same ribbon behind the runner. It wakes at score 8, starts ~3.2 segments back, and **closes steadily on its own**. If it reaches you, the run ends with `CAUGHT`.
+
+The important part is not the pressure — it is what it does to the scoring economy. **Risk pushes it back:** a near miss buys 0.42 segments, a coin 0.22, a boost 0.9. Nothing else does. So a player who only survives is on a timer they cannot see off, and the only way to keep running is to keep taking chances.
+
+This makes the risk layer mandatory rather than optional, which was the deepest problem with every previous version of this game. Playing safe is now the losing strategy, by construction.
+
+The gap is capped at 4.2 segments so the pursuer is always on screen or just off it — never forgotten.
+
 ## Power-ups — exactly two
 
 - **Shield** — absorbs one hit, visible as a ring on the runner.

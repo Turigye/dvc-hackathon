@@ -138,3 +138,42 @@ describe("risk, reward and determinism", () => {
     expect(slow.progress).toBeCloseTo(fast.progress, 2);
   });
 });
+
+describe("the pursuer", () => {
+  test("stays asleep until the player has found their footing", () => {
+    const early = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 3000);
+    expect(early.score).toBeLessThan(8);
+    expect(early.chaserActive).toBe(false);
+  });
+
+  test("wakes and then closes on its own", () => {
+    const state = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 30000);
+    expect(state.chaserActive).toBe(true);
+    const later = run(state, 4000);
+    expect(later.chaseGap).toBeLessThan(state.chaseGap);
+  });
+
+  test("catches a player who never takes a risk", () => {
+    // No hazards, so nothing can push the pursuer back. Safety alone loses.
+    const state = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 200000);
+    expect(state.failed).toBe(true);
+    expect(state.failure).toBe("caught");
+  });
+
+  test("risk buys distance — a near miss pushes it back", () => {
+    // Start on rail 1 so the fold at segment 1 puts the runner on rail 0, clearing
+    // the rail-1 hazard closely rather than colliding with it.
+    const base = createSwitchbackState({ seed: 3, spawnEnabled: false, rail: 1, chaserActive: true, chaseGap: 2 });
+    const withRisk = { ...base, hazards: [{ id: 1, kind: "piston" as const, segment: 1, rail: 1 as const, from: 0.4, to: 0.49 }] };
+    const safe = run(base, 4000);
+    const risky = run(withRisk, 4000);
+    expect(risky.bestCombo).toBeGreaterThan(0);
+    expect(risky.chaseGap).toBeGreaterThan(safe.chaseGap);
+  });
+
+  test("the gap is capped so the pursuer never disappears", () => {
+    let state = createSwitchbackState({ seed: 3, spawnEnabled: false, chaserActive: true, chaseGap: 4.2 });
+    for (let i = 0; i < 40; i++) state = step(state, 16, idle);
+    expect(state.chaseGap).toBeLessThanOrEqual(4.2);
+  });
+});
