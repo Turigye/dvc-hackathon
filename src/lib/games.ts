@@ -1,4 +1,4 @@
-export const gameSlugs = ["switchback", "skyline", "slice", "color-rings"] as const;
+export const gameSlugs = ["switchback", "skyline", "pulse", "reflex", "slice", "color-rings"] as const;
 
 export type GameSlug = (typeof gameSlugs)[number];
 
@@ -6,7 +6,7 @@ export type GameDefinition = {
   slug: GameSlug;
   title: string;
   kicker: string;
-  accent: "cobalt" | "magenta" | "acid" | "electric";
+  accent: "cobalt" | "magenta" | "acid" | "electric" | "ember";
   description: string;
   scoreCap: number;
 };
@@ -14,6 +14,8 @@ export type GameDefinition = {
 export const games: GameDefinition[] = [
   { slug: "switchback", title: "Switchback", kicker: "Tap to flip.", accent: "cobalt", description: "Zigzag runner", scoreCap: 4_000 },
   { slug: "skyline", title: "Skyline", kicker: "Tap to stack.", accent: "magenta", description: "Precision tower", scoreCap: 4_000 },
+  { slug: "pulse", title: "Pulse", kicker: "Tap to rise.", accent: "electric", description: "Gate flight", scoreCap: 6_000 },
+  { slug: "reflex", title: "Reflex", kicker: "Tap on the arc.", accent: "ember", description: "Timing dial", scoreCap: 6_000 },
   { slug: "slice", title: "Slice", kicker: "Swipe to cut.", accent: "acid", description: "Blade combos", scoreCap: 9_000 },
   { slug: "color-rings", title: "Color Rings", kicker: "Spin to match.", accent: "electric", description: "Colour reflex", scoreCap: 3_000 },
 ];

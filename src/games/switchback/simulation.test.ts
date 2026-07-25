@@ -188,7 +188,7 @@ describe("the pursuer", () => {
 });
 
 describe("drag bands", () => {
-  const band = { id: 90, segment: 1, rail: 1 as const, from: 0.25, to: 0.6 };
+  const band = { id: 90, kind: "drag" as const, segment: 1, rail: 1 as const, from: 0.25, to: 0.6 };
 
   test("running through a drag band slows the runner", () => {
     const clear = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0 }), 6000);
@@ -207,5 +207,40 @@ describe("drag bands", () => {
   test("drag bands are never lethal", () => {
     const dragged = run(createSwitchbackState({ seed: 5, spawnEnabled: false, rail: 0, drags: [band] }), 20000);
     expect(dragged.failure).not.toBe("hazard");
+  });
+});
+
+describe("chase balance", () => {
+  /** Commits to the risky rail: dodges late, then rides sprint pads. */
+  const skilled = (s: SwitchbackState) => {
+    const seg = segmentOf(s.progress); const at = offsetOf(s.progress);
+    const here = s.rail; const there: Rail = here === 0 ? 1 : 0;
+    const lethal = (r: Rail, p: number) => s.hazards.some((h) => h.segment === seg && hazardCovers(h, r, p));
+    if (lethal(here, at + 0.05)) return !lethal(there, at + 0.05);
+    const sprint = s.drags.find((b) => b.kind === "sprint" && b.segment === seg && b.rail === there && b.to > at);
+    if (sprint) {
+      for (let p = at; p <= sprint.from + 0.02; p += 0.02) if (lethal(there, p)) return false;
+      return true;
+    }
+    return false;
+  };
+
+  test("a skilled player can out-run the pursuer", () => {
+    let best = 0;
+    for (const seed of [4, 11, 23, 37, 58]) {
+      let s = createSwitchbackState({ seed });
+      for (let t = 0; t < 5000 && !s.failed; t++) s = step(s, 16, { flip: skilled(s) });
+      best = Math.max(best, s.score);
+    }
+    // Escaping is possible: at least one seed survives well past the point
+    // where a passive player is always caught.
+    expect(best).toBeGreaterThan(60);
+  });
+
+  test("a passive player is still caught", () => {
+    let s = createSwitchbackState({ seed: 4, spawnEnabled: false });
+    let ms = 0;
+    while (!s.failed && ms < 60000) { s = step(s, 16, idle); ms += 16; }
+    expect(s.failure).toBe("caught");
   });
 });

@@ -27,7 +27,7 @@ Before beginning a task, both agents must:
 
 To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight
 
-_(empty — documentation handoff committed; no application-code change.)_
+**Codex — global game-skill installation (2026-07-26):** `COORDINATION.md` and `AGENTS.md`; install the user-approved reusable game-development skill set globally, document activation rules, and hand the same requirement to Claude. No game/app code changes. Release after validation and a documentation-only commit.
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.
 

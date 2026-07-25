@@ -1,0 +1,110 @@
+"use client";
+/* eslint-disable react-hooks/set-state-in-effect -- the game loop drives state from rAF. */
+
+import { useEffect, useRef, useState } from "react";
+import type { GameProps } from "./types";
+
+/**
+ * PULSE — tap to rise, fall when you don't. Each gate has a coloured half;
+ * you may only pass through the half matching your current colour, and your
+ * colour flips every time you clear one. Rule: `Tap to rise. Match the gate.`
+ *
+ * Adapted from the care package's colour/phase-gate idea, written from scratch.
+ */
+
+type Gate = { id: number; x: number; safeTop: boolean; cleared?: boolean };
+
+const COLORS = ["#FF2E88", "#00E5FF"];
+const GRAVITY = 128;
+const LIFT = -46;
+const GAP = 30;
+
+export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
+  const [y, setY] = useState(50);
+  const [gates, setGates] = useState<Gate[]>([]);
+  const [phase, setPhase] = useState(0);
+  const [score, setScore] = useState(0);
+  const [running, setRunning] = useState(false);
+  const world = useRef({ y: 50, vy: 0, gates: [] as Gate[], phase: 0, score: 0, speed: 26, seq: 0, start: 0 });
+  const lift = useRef(false);
+  const finish = useRef(onFinish);
+  useEffect(() => { finish.current = onFinish; });
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
+
+  useEffect(() => {
+    if (!running || !active) return;
+    let frame = 0;
+    let previous = performance.now();
+    const loop = (now: number) => {
+      const dt = Math.min(64, now - previous) / 1000;
+      previous = now;
+      const w = world.current;
+      if (lift.current) { w.vy = LIFT; lift.current = false; }
+      w.vy += GRAVITY * dt;
+      w.y += w.vy * dt;
+
+      if (!w.gates.length || w.gates[w.gates.length - 1].x < 62) {
+        w.gates.push({ id: ++w.seq, x: 108, safeTop: Math.random() < 0.5 });
+      }
+      for (const gate of w.gates) gate.x -= w.speed * dt;
+
+      for (const gate of w.gates) {
+        if (gate.cleared || gate.x > 22) continue;
+        if (gate.x < 12) {
+          const inTop = w.y < 50 - GAP / 2;
+          const inBottom = w.y > 50 + GAP / 2;
+          const safeSide = gate.safeTop ? inTop : inBottom;
+          if (!safeSide) {
+            setRunning(false);
+            finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: `${w.score} GATES` });
+            return;
+          }
+          gate.cleared = true;
+          w.score += 10;
+          w.phase = w.phase === 0 ? 1 : 0;
+          w.speed = Math.min(52, w.speed + 0.9);
+          setScore(w.score);
+          setPhase(w.phase);
+        }
+      }
+      w.gates = w.gates.filter((gate) => gate.x > -14);
+
+      if (w.y < 2 || w.y > 98) {
+        setRunning(false);
+        finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "OUT OF BOUNDS" });
+        return;
+      }
+      setY(w.y);
+      setGates([...w.gates]);
+      frame = requestAnimationFrame(loop);
+    };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [running, active]);
+
+  useEffect(() => { if (!active) setRunning(false); }, [active]);
+
+  const tap = () => {
+    if (!active) return;
+    if (!running) {
+      world.current = { y: 50, vy: 0, gates: [], phase: 0, score: 0, speed: 26, seq: 0, start: Date.now() };
+      setY(50); setGates([]); setScore(0); setPhase(0); setRunning(true);
+      return;
+    }
+    lift.current = true;
+  };
+
+  return (
+    <button type="button" className="stage pulse-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to rise" : "Tap to start Pulse"}>
+      <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong></div>
+      {gates.map((gate) => (
+        <div key={gate.id} className="pulse-gate" style={{ left: `${gate.x}%` }}>
+          <i className={gate.safeTop ? "is-safe" : "is-blocked"} style={{ height: `${50 - GAP / 2}%`, top: 0 }} />
+          <i className={gate.safeTop ? "is-blocked" : "is-safe"} style={{ height: `${50 - GAP / 2}%`, bottom: 0 }} />
+        </div>
+      ))}
+      <i className="pulse-bird" style={{ top: `${y}%`, background: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />
+      <div className="prompt">{running ? "TAP TO RISE" : "TAP TO START"}</div>
+    </button>
+  );
+}

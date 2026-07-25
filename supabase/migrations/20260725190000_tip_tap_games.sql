@@ -11,7 +11,7 @@ create table public.games (
 create table public.players (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique references auth.users(id) on delete set null,
-  device_id uuid unique,
+  device_id text unique,
   display_name text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -22,7 +22,7 @@ create table public.scores (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null references public.players(id) on delete cascade,
   game_id uuid not null references public.games(id) on delete cascade,
-  round_id uuid not null unique,
+  round_id text not null unique,
   score integer not null check (score >= 0),
   duration_ms integer not null check (duration_ms > 0),
   created_at timestamptz not null default now()
@@ -41,6 +41,8 @@ alter table public.scores enable row level security;
 insert into public.games (slug, label, score_cap) values
   ('switchback', 'Switchback', 4000),
   ('skyline', 'Skyline', 4000),
+  ('pulse', 'Pulse', 6000),
+  ('reflex', 'Reflex', 6000),
   ('slice', 'Slice', 9000),
   ('color-rings', 'Color Rings', 3000)
 on conflict (slug) do update set label = excluded.label, score_cap = excluded.score_cap;

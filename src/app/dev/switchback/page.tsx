@@ -61,7 +61,7 @@ function Frame({ state, label }: { state: SwitchbackState; label: string }) {
         {state.drags.map((drag) => {
           const start = railPoint(drag.segment, drag.from, drag.rail);
           const end = railPoint(drag.segment, drag.to, drag.rail);
-          return <line key={`d${drag.id}`} className="drag-band" x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
+          return <line key={`d${drag.id}`} className={`drag-band is-${drag.kind}`} x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
         })}
 
         {state.hazards.map((hazard) => {

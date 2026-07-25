@@ -4,7 +4,10 @@ import { isGameSlug } from "@/lib/games";
 import { recordMemoryScore } from "@/lib/score-store";
 import { recordPersistentScore } from "@/lib/score-persistence";
 
-const scoreSchema = z.object({ game: z.string(), score: z.number().int().nonnegative(), roundId: z.string().uuid(), durationMs: z.number().int().positive(), deviceId: z.string().uuid() });
+// Not `.uuid()`: LAN/HTTP previews have no Web Crypto, so `createClientId`
+// falls back to a non-UUID guest id. The columns are `text` to match.
+const idSchema = z.string().min(8).max(64).regex(/^[A-Za-z0-9-]+$/);
+const scoreSchema = z.object({ game: z.string(), score: z.number().int().nonnegative(), roundId: idSchema, durationMs: z.number().int().positive(), deviceId: idSchema });
 
 export async function POST(request: Request) {
   const parsed = scoreSchema.safeParse(await request.json());

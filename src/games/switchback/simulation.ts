@@ -14,7 +14,8 @@ export type HazardKind = "piston" | "spikes" | "sweeper";
 export type PickupKind = "coin" | "shield" | "boost";
 
 /** A non-lethal slow band. Running through it drags you and lets the pursuer gain. */
-export type Drag = { id: number; segment: number; rail: Rail; from: number; to: number };
+export type Band = { id: number; kind: "drag" | "sprint"; segment: number; rail: Rail; from: number; to: number };
+export type Drag = Band;
 
 export type Hazard = {
   id: number;
@@ -88,8 +89,11 @@ const CHASER_MAX_GAP = 2.15;
 const CHASER_CLOSE_BASE = 0.115;
 const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
 /** While dragging, you crawl and the pursuer closes far faster. This is the jeopardy. */
-const DRAG_SPEED = 0.55;
-const DRAG_CHASE_MULTIPLIER = 4.5;
+const DRAG_SPEED = 0.6;
+const DRAG_CHASE_MULTIPLIER = 3.4;
+/** Sprint pads are the counterweight: escape has to be reachable, not theoretical. */
+const SPRINT_SPEED = 1.55;
+const SPRINT_CHASE_MULTIPLIER = -2.2;
 
 type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "drags">>;
 
@@ -195,9 +199,15 @@ function spawnSegment(state: SwitchbackState, segment: number) {
 
   // Sometimes the open rail carries a drag band: surviving is still possible,
   // but taking the lazy line costs you ground against the pursuer.
-  if (segment > 3 && random(state) < 0.34) {
-    const from = 0.2 + random(state) * 0.42;
-    state.drags.push({ id: state.nextId++, segment, rail: other(hazard.rail), from, to: Math.min(0.95, from + 0.24) });
+  if (segment > 3 && random(state) < 0.36) {
+    const from = 0.2 + random(state) * 0.4;
+    state.drags.push({ id: state.nextId++, kind: "drag", segment, rail: other(hazard.rail), from, to: Math.min(0.95, from + 0.22) });
+  }
+  // The risky rail past the hazard carries a sprint pad often enough that a
+  // player who commits to danger can always out-run the pursuer.
+  if (segment > 2 && hazard.to + 0.3 < 0.95 && random(state) < 0.55) {
+    const from = hazard.to + 0.26;
+    state.drags.push({ id: state.nextId++, kind: "sprint", segment, rail: hazard.rail, from, to: Math.min(0.96, from + 0.2) });
   }
 
   // A second hazard may never close the last open rail at the same point on
@@ -262,9 +272,10 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     const slice = Math.min(sliceMs, remaining);
     remaining -= slice;
     const before = state.progress;
-    const slowed = state.drags.some((drag) => drag.segment === segmentOf(before) && drag.rail === state.rail
-      && offsetOf(before) >= drag.from && offsetOf(before) <= drag.to);
-    state.progress += (speed * (slowed ? DRAG_SPEED : 1) * slice) / 1000;
+    const band = state.drags.find((item) => item.segment === segmentOf(before) && item.rail === state.rail
+      && offsetOf(before) >= item.from && offsetOf(before) <= item.to);
+    const paceFactor = band?.kind === "drag" ? DRAG_SPEED : band?.kind === "sprint" ? SPRINT_SPEED : 1;
+    state.progress += (speed * paceFactor * slice) / 1000;
 
     // Vertex crossed: the ribbon folds, so the runner's rail inverts.
     if (segmentOf(state.progress) !== segmentOf(before)) {
@@ -280,11 +291,14 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       state.chaseGap = CHASER_START_GAP;
       emit(state, "chaser");
     }
-    const dragging = state.drags.some((drag) => drag.segment === segmentOf(state.progress) && drag.rail === state.rail
-      && offsetOf(state.progress) >= drag.from && offsetOf(state.progress) <= drag.to);
-    if (dragging && state.event !== "drag") emit(state, "drag");
+    const bandNow = state.drags.find((band) => band.segment === segmentOf(state.progress) && band.rail === state.rail
+      && offsetOf(state.progress) >= band.from && offsetOf(state.progress) <= band.to);
+    const dragging = bandNow?.kind === "drag";
+    const sprinting = bandNow?.kind === "sprint";
+    if (bandNow && state.event !== "drag") emit(state, "drag");
     if (state.chaserActive) {
-      state.chaseGap -= (chaserCloseRate(state.score) * (dragging ? DRAG_CHASE_MULTIPLIER : 1) * slice) / 1000;
+      const pressure = dragging ? DRAG_CHASE_MULTIPLIER : sprinting ? SPRINT_CHASE_MULTIPLIER : 1;
+      state.chaseGap = Math.min(CHASER_MAX_GAP, state.chaseGap - (chaserCloseRate(state.score) * pressure * slice) / 1000);
       if (state.chaseGap <= 0) {
         state.failed = true;
         state.failure = "caught";

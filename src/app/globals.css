@@ -26,6 +26,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .world-cobalt { --bg1:#0B0F1A; --bg2:#132A6B; --pop:#F5A623; --pop2:#1B48E0; }
 .world-acid { --bg1:#08251A; --bg2:#0E8A57; --pop:#C6FF00; --pop2:#FF6B00; }
 .world-electric { --bg1:#040F35; --bg2:#1157C7; --pop:#00E5FF; --pop2:#FFD400; }
+.world-ember { --bg1:#2A0A06; --bg2:#A8300F; --pop:#FFB000; --pop2:#FF4A26; }
 
 /* ---- Stage fills the card; chrome floats above it ---- */
 .stage-host { position:absolute; inset:0; z-index:1; }
@@ -102,7 +103,8 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .switchback-stage { touch-action:none; }
 .switchback-view { position:absolute; inset:0; width:100%; height:100%; }
 .ribbon { fill:none; stroke:#1B48E0; stroke-linejoin:round; stroke-linecap:round; }
-.drag-band { stroke:#7A4A12; stroke-opacity:.85; }
+.drag-band.is-drag { stroke:#7A4A12; stroke-opacity:.9; }
+.drag-band.is-sprint { stroke:#00E5FF; stroke-opacity:.75; }
 .ribbon-wall { fill:none; stroke:#0A1F52; stroke-linejoin:round; stroke-linecap:round; }
 .centre-stripes { fill:none; stroke:#0A1F52; stroke-opacity:.7; stroke-width:5; stroke-dasharray:7 41; stroke-linecap:butt; }
 .rail-line { fill:none; stroke:#EDE7DC; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round; }
@@ -165,4 +167,22 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .key li { display:flex; align-items:center; gap:6px; }
 .key i { width:9px; height:9px; border-radius:2px; flex:0 0 auto; }
 .k-hazard { background:#E8391B; } .k-coin { background:#F5A623; border-radius:50%; }
-.k-drag { background:#7A4A12; } .k-chaser { background:#E8391B; border-radius:50%; border:1.5px solid #EDE7DC; }
+.k-drag { background:#7A4A12; } .k-sprint { background:#00E5FF; } .k-chaser { background:#E8391B; border-radius:50%; border:1.5px solid #EDE7DC; }
+
+/* ---- PULSE (blockout) ---- */
+.pulse-stage { touch-action:none; }
+.pulse-gate { position:absolute; top:0; bottom:0; width:11%; }
+.pulse-gate i { position:absolute; left:0; right:0; border-radius:3px; }
+.pulse-gate .is-blocked { background:#E8391B; box-shadow:0 0 18px rgb(232 57 27 / .5); }
+.pulse-gate .is-safe { background:rgb(237 231 220 / .12); border:1.5px dashed rgb(237 231 220 / .35); }
+.pulse-bird { position:absolute; left:16%; width:26px; height:26px; border-radius:50%; transform:translate(-50%, -50%); }
+
+/* ---- REFLEX (blockout) ---- */
+.reflex-stage { touch-action:none; }
+.reflex-dial { position:absolute; inset:0; width:100%; height:100%; }
+.dial-track { fill:none; stroke:rgb(237 231 220 / .16); stroke-width:7; }
+.dial-arc { fill:none; stroke:var(--pop); stroke-width:7; stroke-linecap:butt; filter:drop-shadow(0 0 6px var(--pop)); }
+.dial-hand { stroke:#EDE7DC; stroke-width:2.4; stroke-linecap:round; }
+.dial-hub { fill:#EDE7DC; }
+.reflex-stage.is-hit .dial-arc { stroke:#C6FF00; }
+.reflex-stage.is-miss .dial-arc { stroke:#E8391B; }
