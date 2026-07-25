@@ -41,16 +41,16 @@
 
 ### Typography
 
-Two families only, both loaded locally through `next/font`.
+Two families, both loaded through `next/font`. Matches `src/app/layout.tsx`.
 
 | Role | Family | Weight | Size / line-height | Tracking |
 | --- | --- | --- | --- | --- |
-| Display (score, HI-SCORE, GAME OVER) | Silkscreen | 700 | clamp(2rem, 12vw, 3.5rem) / 1.0 | .04em |
-| Heading (game title) | Silkscreen | 700 | 1.125rem / 1.2 | .08em, uppercase |
-| Body (rule text) | IBM Plex Mono | 500 | .9375rem / 1.45 | 0 |
-| UI label (rail, rank, initials) | IBM Plex Mono | 600 | .72rem / 1.15 | .14em, uppercase |
+| Display (score, GAME OVER, game title) | Bricolage Grotesque | 800 | 2rem–3.4rem / .95–1 | -.045em to -.05em |
+| Wordmark | Bricolage Grotesque | 800 | 1.05rem / 1 | -.04em |
+| Body / rule text | IBM Plex Mono | 500 | .7rem / 1.45 | .12em |
+| UI label (rail, board strip) | IBM Plex Mono | 600 | .52–.66rem / 1.15 | .1em–.2em, uppercase |
 
-**Rule:** the pixel display face is for **numbers and machine words only**. Never set a sentence in it — legibility dies and it reads as costume.
+**Rule:** the display face carries numbers and titles at scale. Everything small and functional is mono — it reads as instrumentation, which is what keeps the loud colour from tipping into noise.
 
 ### Color roles
 
@@ -70,24 +70,26 @@ Three worlds, each supplying `--bg1`, `--bg2` and `--pop`. Shared neutrals sit o
 
 ### Layout and depth
 
-- **Design width:** 390×844 first. Desktop is a centred 430px cabinet on a dark floor, never a stretched layout.
-- **Content width and gutters:** Full-bleed card, 16px mobile gutters, `env(safe-area-inset-*)` respected.
-- **Spacing scale:** 4, 8, 12, 16, 24, 32, 48px.
-- **Radius scale:** 0, 2, 4 only. Cabinets have corners.
-- **Border treatment:** 2px solid `--border`. Hard edges, no blur, no glass.
-- **Shadow / elevation rules:** No drop shadows. Elevation is phosphor glow — `box-shadow: 0 0 12px` accent at low alpha, on active elements only, never animated per frame.
-- **Breakpoints:** 390 base, 430, 768 (cabinet frame and second telemetry column appear).
+- **Design width:** 390×844 first. Desktop is a centred 430px column on the ink floor, never a stretched layout.
+- **Full-bleed rule:** the stage is `position: absolute; inset: 0`. Chrome overlays it via a `pointer-events: none` layer; only buttons re-enable pointer events. Nothing stacks in vertical flow, so a card can never exceed `100dvh`.
+- **Spacing scale:** 4, 8, 12, 14, 18, 24px.
+- **Radius scale:** 3px (blocks), 18px (result sheet), 999px (pills and primary actions).
+- **Border treatment:** 1.5px `--line` hairlines on pills and the result sheet. No heavy frames.
+- **Elevation:** coloured glow, not shadow — `box-shadow: 0 0 26px var(--pop)` on live elements, plus a radial vignette on each card to seat the chrome.
+- **Safe areas:** every fixed edge respects `env(safe-area-inset-*)`. Chrome sits inside the bottom thumb arc.
+- **Breakpoints:** 390 base, 768 (column caps at 430px).
 
 ## Components and states
 
-| Component | Variants | Hover / focus / disabled | Mobile behavior |
+| Component | Variants | Focus / disabled | Mobile behavior |
 | --- | --- | --- | --- |
-| Game card | active / attract / ghost | 2px phosphor focus outline, always visible on keyboard | Full-bleed, snap-aligned, one per viewport |
-| Action rail | hi-score, rank, share | Focus ring; disabled at 45% opacity | Right edge, thumb-reachable vertical stack |
-| Score readout | live / best / final | n/a | Top-left, tabular numerals, never reflows |
-| Initials entry | 3-slot character picker | Phosphor caret blink on focus | Bottom sheet over the card, never a route change |
-| Leaderboard | top 10 + your rank | Row focus outline | Expands in-card; never navigates away |
-| Feedback states | precision / miss / new best / save prompt | Colour + copy + icon, never colour alone | Bottom sheet replaces modal |
+| Card | one per world (magenta / acid / electric) | — | Full-bleed, snap-aligned, exactly `100dvh` |
+| Stage | per game | 2.5px `--pop` focus outline | Fills the card; `touch-action: none` |
+| HUD | live score, combo pill, lives | — | Top-left, tabular numerals, never reflows |
+| Action rail | BEST / RANK / SHARE | Focus ring on SHARE | Right edge, inside the thumb arc |
+| Board strip | top 3 + you | — | Horizontally scrollable, no wrap |
+| Result sheet | game over | Focus ring on both actions | Bottom sheet over the card, never a route change |
+| Initials entry *(unbuilt)* | 3-slot picker | Caret blink | Bottom sheet on a qualifying run |
 
 ## Motion and media
 
