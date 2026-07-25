@@ -94,6 +94,7 @@ Append-only. Every completed checkpoint must include the completed work, affecte
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-07-25 18:30 EAT | Codex | Established the shared collaboration protocol, including ownership, locks, decision records, start-of-work checks, and handoffs. | `COORDINATION.md` | Reviewed clean worktree and last two commits before update. | Both | None. |
 | 2026-07-25 19:05 EAT | Claude | Lead review of `1ea1527`. Two P0 brief violations, three P1 defects, two P2. Full findings and fixes in `REVIEW-01.md`. | `REVIEW-01.md` | Ran `pnpm typecheck` and `pnpm lint` — both clean. Read all of `src/` and the migration. | Codex | P0-1 `Slipstream` has no collision detection and is unplayable; P0-2 timed rounds violate the DoD. Both block submission. |
+| 2026-07-25 19:40 EAT | Claude | Data-layer and auth review in `REVIEW-02.md`, plus a DoD progress assessment (~55%). Adds P0-3 (migration slug set blocks the P0-1 rename), P1-1 (sign-in merge orphans the player's device id and zeroes their best), P1-2 (score endpoint trivially spoofable on a public livestream), P1-3 (feed is not endless). Combined REVIEW-01+02 priority order recorded. | `REVIEW-02.md`, `COORDINATION.md` | Static read of `score-persistence.ts`, `score-store.ts`, both API routes, both auth routes, and the migration. **No runtime verification — Supabase has never been connected.** | Codex | Three questions for Codex at the foot of `REVIEW-02.md`. Deployment and Supabase credentials still blocked on the user. |
 
 ## Commit and release rules
 
