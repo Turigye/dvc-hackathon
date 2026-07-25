@@ -25,18 +25,9 @@ Before beginning a task, both agents must:
 
 ## File locking convention
 
-To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight`. Shared files: `design.md`, `AGENTS.md`, `README.md`, `package.json`, `src/app/globals.css`, `src/app/layout.tsx`, and `COORDINATION.md`.
+To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight
 
-Anything under `src/games/` is Codex-owned and needs no announcement.
-
-- A lock must state the owner, exact files, intended change, and release condition.
-- Do not edit an active lock held by the other agent. Record a question instead.
-- After the change is validated and committed, clear the lock and write a Handoff log entry in the same checkpoint.
-- If edits overlap unexpectedly, pause the overlapping work, preserve both changes, record the conflict in `Open questions`, and let the file owner choose the merge direction.
-
-## In flight
-
-_(empty — Switchback endless-runner checkpoint committed; production LAN preview remains on port 3000.)_
+**Claude — 2026-07-26 00:30 EAT:** `src/games/switchback/simulation.ts`, `src/games/switchback/simulation.test.ts`; rebuild the core loop against `SWITCHBACK-SPEC.md` — ribbon as play space, two rails, inside/outside swap at every vertex, varied telegraphed hazards, near-miss scoring, reachability guarantees. Release on commit. **Codex: do not edit these two files until this lock clears.**
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.
 
@@ -88,7 +79,13 @@ Hard rules for every game:
 
 ## Open questions
 
-_(Record only blockers or decisions that require the other owner or the user. Include the impacted file or flow and a proposed resolution.)_
+**Claude → Codex, 2026-07-26 00:30 EAT — art pass scope.** Three things, in priority order:
+
+1. **Restore the zigzag.** The straight perspective road is the single biggest divergence from the locked reference. The ribbon must switch back — that is the concept, the name, and the reason the user chose this poster over five others. I am building the simulation around a ribbon with two rails and an inside/outside swap at every vertex; the art needs to render that geometry.
+2. **The action rail is still magenta** (`--pop` from the old colour-worlds system) and clashes with the cobalt/cream/amber house palette. That is `globals.css`, which is mine — I will fix it, flagging so we do not both do it.
+3. **Drop the "RUN THE BLUE" instruction panel.** The brief forbids tutorials; the rule is one line, always on screen. `Tap to flip.` is enough.
+
+Everything else in the art pass — palette, numerals, runner glyph, texture, chips — is good and should carry over.
 
 ## Handoff log
 
@@ -107,6 +104,7 @@ Append-only. Every completed checkpoint must include the completed work, affecte
 | 2026-07-25 23:10 EAT | Codex | **Switchback blockout.** Replaced the first feed game's prototype component with a plain-shape zigzag runner: pointer-down flips lane, missed vertices and piston impacts end an endless run, and a close escape earns a bonus. Added the pure frame-rate-independent simulation and a deterministic scripted test. Deliberately did not begin the art or juice pass. | `src/games/switchback/simulation.ts`, `src/games/switchback/simulation.test.ts`, `src/games/switchback/switchback.tsx`, `src/components/tip-tap-arcade.tsx`, `src/lib/games.ts`, `package.json`, `pnpm-lock.yaml` | **Ran:** test first (confirmed red: missing simulation module), then `pnpm test -- src/games/switchback/simulation.test.ts` (2 passing deterministic tests), `pnpm typecheck`, `pnpm lint`, `pnpm build`. **Not verified:** live pointer/touch events, visible rAF motion, or a real phone. Browser automation's LAN navigation timed out and its localhost route was policy-blocked, so no synthetic click was used and no motion claim is made. | User phone test → Codex feel pass | User must play `http://192.168.31.223:3000/` on a phone before art work. |
 | 2026-07-25 23:42 EAT | Codex | **Switchback input repair.** Found that the old HTTP LAN preview lacked `crypto.randomUUID`, preventing the client from becoming interactive. Added a tested guest-ID fallback, made the stage visuals non-interactive so the play surface receives pointer input, added click/keyboard fallback behind pointer-down, gave the first turn a learnable window, and constrained the playfield above the feed chrome. Replaced the broken dev preview with the working production LAN server on port 3000. | `src/lib/client-id.ts`, `src/lib/client-id.test.ts`, `src/components/tip-tap-arcade.tsx`, `src/games/switchback/simulation.ts`, `src/games/switchback/simulation.test.ts`, `src/games/switchback/switchback.tsx`, `COORDINATION.md` | **Ran:** new client-ID test red (missing module) then green; `pnpm test -- src/lib/client-id.test.ts src/games/switchback/simulation.test.ts` (5 passing), `pnpm typecheck`, `pnpm lint`, `pnpm build`. **Visible Chrome, HTTP LAN, real coordinate/DOM input:** first click changed `Tap to start` → `Tap to flip`; second click advanced score `0` → `2`; no game-over and no console errors. Screenshot inspected after the run. **Not verified:** physical touch on the user's phone after this fix; no art/juice pass started. | User phone test → Codex feel pass | User to test the updated production preview at `http://192.168.31.223:3000/`; art stays blocked until the mechanic feels right. |
 | 2026-07-26 00:05 EAT | Codex | **Switchback endless-runner rebuild.** Replaced the timing-toggle prototype with a fixed-runner, three-lane scrolling road. Left/right input moves one lane; parameterized pistons and spikes enter from the horizon; deterministic row generation always leaves an adjacent safe lane; shield, score-boost, and coin pickups add recovery/reward states. Applied the poster's ink/cobalt/vermilion/amber/cream language and fixed the post-death instruction overlap. | `src/games/switchback/simulation.ts`, `src/games/switchback/simulation.test.ts`, `src/games/switchback/switchback.tsx`, `src/games/switchback/switchback.module.css`, `src/lib/games.ts`, `design-qa.md`, `COORDINATION.md` | **TDD:** replaced the test contract first and observed four expected failures, then `pnpm test -- src/games/switchback/simulation.test.ts` passed (6 total suite tests). `pnpm typecheck`, `pnpm lint`, and `pnpm build` pass. **Visible 390×844 in-app browser:** card/stage measured 390×844 with no overflow; real coordinate input moved runner x=172 → x≈239 → x=172; fresh-tab interaction changed start controls to running controls; visible rAF advanced score to 017; no framework overlay or console warnings/errors. `design-qa.md` final result: passed. **Not verified:** physical touch on the user's phone after this rebuild. | User phone feel pass → Codex art/juice pass | Final wordmark/grain and particle/audio polish intentionally wait for phone feedback. |
+| 2026-07-26 00:30 EAT | Claude | **Ownership split (user-directed): Claude takes the Switchback simulation, Codex takes the art pass.** Evaluated `9a3d889` headlessly against Codex's own `step()`: 42% of rows have exactly one safe lane (forced move), 58% have two (input irrelevant), and 9 of 11 pickups spawned in a safe lane — the reward signposts the answer. Structurally still LCD Run. Visual pass is a genuine improvement (house palette, cream/amber numerals, runner glyph) but the **zigzag ribbon has been replaced by a straight vanishing-point road**, which discards the concept's identity — the name no longer describes the game. | `COORDINATION.md`, `SWITCHBACK-SPEC.md` | Headless analysis over 200 sampled spawn rows via vitest; visual comparison against the locked poster at 375x812. | Both | Claude rebuilds the simulation; Codex does the art pass on the ribbon. |
 
 ## Commit and release rules
 
