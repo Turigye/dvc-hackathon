@@ -97,5 +97,42 @@ Every accepted asset gets a manifest entry in `public/assets/manifest.md` — pr
 - [ ] A deterministic `step()` test passes headlessly with a scripted input sequence.
 - [ ] The card is exactly `100dvh`; the game hard-stops when swiped away.
 - [ ] House style applied; grain is one tiling layer, not a per-frame effect.
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm build` all clean.
+- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test` all clean.
 - [ ] Handoff row states exactly what was verified and on what device.
+
+---
+
+## 10. Addenda — 2026-07-25 23:35 EAT
+
+Added after reviewing an external write-up on agent-assisted game development. Two of its recommendations you have already implemented independently (a pure simulation split from rendering, and a test runner); these are the rest.
+
+### 10.1 Stack decision: no game engine
+
+We evaluated Phaser, PixiJS, Excalibur, Rapier and Three.js and are **not adopting any of them**. Rationale: a Phaser scene graph would have to be reconciled with a React snap-feed that mounts and unmounts cards continuously, it adds roughly a megabyte of bundle, and it would require re-plumbing scores through our existing API — a shell rewrite to ship one game. Switchback is a runner on a polyline with falling rectangles; canvas or DOM transforms are sufficient.
+
+Also rejected, for weight rather than quality: GSAP, XState, Howler, nanoid. Audio, when it lands, is WebAudio oscillators — roughly twenty lines, no Tone.js.
+
+### 10.2 Asset sourcing — Kenney, itch.io and similar packs are banned
+
+`AGENTS.md` prohibits stock assets and requires bespoke imagery, and the hackathon scores originality. CC0 packs are legally clean and strategically wrong here. Generate what section 7 lists, draw everything else in code.
+
+### 10.3 Scroll suppression is a hard requirement
+
+The play surface must prevent browser scrolling and pull-to-refresh while a run is in progress: `touch-action: none` on the surface, `overscroll-behavior: none` on the feed, and no reliance on `click`. A run that ends because the page scrolled underneath the player's thumb is the same class of failure as an unplayable build.
+
+### 10.4 Parameterise hazards from the start
+
+Build **one** hazard type driven by typed configuration — telegraph duration, impact window, lane, damage, spawn weight — and define variants as data. Games two and three land much faster if the hazard system is already data-driven, and it avoids three near-duplicate implementations.
+
+### 10.5 Finding for Codex: guest IDs will fail schema validation
+
+Not editing `COORDINATION.md` to raise this — your lock covers it. Please pick this up.
+
+`createClientId` in `src/lib/client-id.ts` correctly falls back to `guest-<base36>-<base36>` when Web Crypto is unavailable on a non-secure LAN origin. Good catch — that was very likely the real reason the app was unplayable on a phone.
+
+But the fallback value is not a UUID, and three places require one:
+
+- `src/app/api/scores/route.ts` — `deviceId: z.string().uuid()` and `roundId: z.string().uuid()`. A guest ID fails validation and the endpoint returns 400.
+- `supabase/migrations/…` — `players.device_id` is typed `uuid`, and `scores.round_id` is `uuid not null unique`. Even past zod, the insert would fail.
+
+So on the LAN preview — the exact environment the user tests in — scores would silently stop persisting. Suggested fix: relax both fields to a bounded `z.string().min(8).max(64)` and change the two columns to `text`, or derive a v4-shaped UUID from the fallback entropy. Either is fine; the schema and the client just have to agree.
