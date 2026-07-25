@@ -5,7 +5,7 @@ import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, Trophy } from "@phosphor-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
-import { Stack } from "@/games/stack";
+import { Switchback } from "@/games/switchback/switchback";
 import { Slice } from "@/games/slice";
 import { ColorRings } from "@/games/color-rings";
 import type { GameResult } from "@/games/types";
@@ -92,7 +92,7 @@ export function TipTapArcade() {
               aria-label={`${game.title} game`}
             >
               <div className="stage-host">
-                {card.slug === "stack" && <Stack active={live} onFinish={(data) => void submit("stack", card.key, data)} />}
+                {card.slug === "stack" && <Switchback active={live} onFinish={(data) => void submit("stack", card.key, data)} />}
                 {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} />}
                 {card.slug === "color-rings" && <ColorRings active={live} onFinish={(data) => void submit("color-rings", card.key, data)} />}
               </div>

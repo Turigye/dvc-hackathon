@@ -12,7 +12,7 @@ export type GameDefinition = {
 };
 
 export const games: GameDefinition[] = [
-  { slug: "stack", title: "Stack", kicker: "Tap to drop.", accent: "magenta", description: "Precision tower", scoreCap: 4_000 },
+  { slug: "stack", title: "Switchback", kicker: "Tap to flip.", accent: "magenta", description: "Zigzag survival", scoreCap: 4_000 },
   { slug: "slice", title: "Slice", kicker: "Swipe to cut.", accent: "acid", description: "Blade combos", scoreCap: 9_000 },
   { slug: "color-rings", title: "Color Rings", kicker: "Spin to match.", accent: "electric", description: "Colour reflex", scoreCap: 3_000 },
 ];
