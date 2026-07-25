@@ -9,6 +9,7 @@ import { Switchback } from "@/games/switchback/switchback";
 import { Slice } from "@/games/slice";
 import { ColorRings } from "@/games/color-rings";
 import type { GameResult } from "@/games/types";
+import { createClientId } from "@/lib/client-id";
 
 const EMPTY: LeaderboardResponse = { entries: [], playerRank: null, percentile: 0, playerBest: 0 };
 const CYCLE = 4;
@@ -17,7 +18,7 @@ const getDeviceId = () => {
   const key = "tip-tap-device-v1";
   const existing = localStorage.getItem(key);
   if (existing) return existing;
-  const created = crypto.randomUUID();
+  const created = createClientId();
   localStorage.setItem(key, created);
   return created;
 };
@@ -60,7 +61,7 @@ export function TipTapArcade() {
   const submit = useCallback(async (game: GameSlug, key: string, data: GameResult) => {
     setResult({ key, data });
     if (!deviceId) return;
-    await fetch("/api/scores", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game, score: data.score, durationMs: data.durationMs, roundId: crypto.randomUUID(), deviceId }) });
+    await fetch("/api/scores", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game, score: data.score, durationMs: data.durationMs, roundId: createClientId(), deviceId }) });
     await loadBoard(game);
   }, [deviceId, loadBoard]);
 

@@ -29,7 +29,9 @@ export function createSwitchbackState(options: Partial<Pick<SwitchbackState, "se
     progress: 0,
     lane: 0,
     flipped: false,
-    speed: 1 / 1_000,
+    // The first corner is deliberately generous: the player must have time to
+    // see the runner move, understand the upcoming turn, and make one choice.
+    speed: 1 / 1_600,
     score: 0,
     bonus: 0,
     closeCalls: 0,
