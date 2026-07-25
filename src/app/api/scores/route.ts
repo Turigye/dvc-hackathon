@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isGameSlug } from "@/lib/games";
 import { recordMemoryScore } from "@/lib/score-store";
+import { recordPersistentScore } from "@/lib/score-persistence";
 
 const scoreSchema = z.object({ game: z.string(), score: z.number().int().nonnegative(), roundId: z.string().uuid(), durationMs: z.number().int().positive(), deviceId: z.string().uuid() });
 
@@ -12,7 +13,8 @@ export async function POST(request: Request) {
   const minimumDuration = game === "beat-drop" ? 2_000 : game === "slipstream" ? 1_000 : 500;
   if (durationMs < minimumDuration) return NextResponse.json({ error: "Round ended too quickly." }, { status: 422 });
   try {
-    recordMemoryScore(game, deviceId, score);
+    const storedInSupabase = await recordPersistentScore(game, deviceId, score, parsed.data.roundId, durationMs);
+    if (!storedInSupabase) recordMemoryScore(game, deviceId, score);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Score is outside this game’s limits." }, { status: 422 });

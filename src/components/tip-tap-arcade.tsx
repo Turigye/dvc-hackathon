@@ -26,7 +26,7 @@ export function TipTapArcade() {
   const [result, setResult] = useState<GameResult | null>(null);
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
-  useEffect(() => setDeviceId(getDeviceId()), []);
+  useEffect(() => { const task = window.setTimeout(() => setDeviceId(getDeviceId()), 0); return () => window.clearTimeout(task); }, []);
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       const top = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
@@ -44,9 +44,9 @@ export function TipTapArcade() {
   }, [deviceId]);
 
   useEffect(() => {
-    void loadLeaderboard(active);
+    const initialLoad = window.setTimeout(() => void loadLeaderboard(active), 0);
     const poll = window.setInterval(() => void loadLeaderboard(active), 7000);
-    return () => window.clearInterval(poll);
+    return () => { window.clearTimeout(initialLoad); window.clearInterval(poll); };
   }, [active, loadLeaderboard]);
 
   const submit = useCallback(async (game: GameSlug, nextResult: GameResult) => {
@@ -89,7 +89,7 @@ export function TipTapArcade() {
               </div>
               <Leaderboard board={leaderboard} game={game.title} />
             </div>
-            {result && active === game.slug && <ResultCard result={result} board={leaderboard} onShare={() => void share()} />}
+            {result && active === game.slug && <ResultCard result={result} board={leaderboard} deviceId={deviceId} onShare={() => void share()} />}
             <div className="swipe-cue" aria-hidden="true"><ArrowDown weight="bold" /> <span>{index === games.length - 1 ? "SWIPE UP" : "NEXT GAME"}</span></div>
           </section>
         ))}
@@ -102,14 +102,14 @@ function Leaderboard({ board, game }: { board: LeaderboardResponse; game: string
   return <aside className="leaderboard" aria-label={`${game} leaderboard`}><div className="leaderboard-heading"><Trophy weight="fill" /> <span>TOP PLAYERS</span></div>{board.entries.length ? board.entries.slice(0, 5).map((entry) => <div className={`rank-row ${entry.isYou ? "is-you" : ""}`} key={`${entry.rank}-${entry.player}`}><span>{String(entry.rank).padStart(2, "0")}</span><b>{entry.player}</b><strong>{entry.score}</strong></div>) : <p>Loading the board…</p>}</aside>;
 }
 
-function ResultCard({ result, board, onShare }: { result: GameResult; board: LeaderboardResponse; onShare: () => void }) {
+function ResultCard({ result, board, onShare, deviceId }: { result: GameResult; board: LeaderboardResponse; onShare: () => void; deviceId: string }) {
   const isWorthSaving = result.score >= Math.max(80, board.playerBest);
-  return <section className="result-card" aria-live="polite"><div><span>ROUND COMPLETE</span><h2>{result.label}</h2><p>{board.percentile ? `You beat ${board.percentile}% of players.` : "Your score is now on the board."}</p></div><div className="result-actions">{isWorthSaving && <a className="save-score" href="/auth/login"><GoogleLogo weight="fill" /> KEEP THIS SCORE</a>}<button type="button" className="share-button" onClick={onShare}><ArrowSquareOut weight="bold" /> CHALLENGE A FRIEND</button></div></section>;
+  return <section className="result-card" aria-live="polite"><div><span>ROUND COMPLETE</span><h2>{result.label}</h2><p>{board.percentile ? `You beat ${board.percentile}% of players.` : "Your score is now on the board."}</p></div><div className="result-actions">{isWorthSaving && <a className="save-score" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> KEEP THIS SCORE</a>}<button type="button" className="share-button" onClick={onShare}><ArrowSquareOut weight="bold" /> CHALLENGE A FRIEND</button></div></section>;
 }
 
 function BeatDrop({ active, onFinish }: { active: boolean; onFinish: (result: GameResult) => void }) {
   const [started, setStarted] = useState(false); const [elapsed, setElapsed] = useState(0); const [score, setScore] = useState(0); const [streak, setStreak] = useState(0); const startAt = useRef(0);
-  useEffect(() => { if (!active) setStarted(false); }, [active]);
+  useEffect(() => { if (!active) { const stop = window.setTimeout(() => setStarted(false), 0); return () => window.clearTimeout(stop); } }, [active]);
   useEffect(() => { if (!started) return; let frame = 0; const tick = () => { const ms = Date.now() - startAt.current; setElapsed(ms); if (ms >= 30_000) { setStarted(false); onFinish({ score, durationMs: ms, label: score > 700 ? "ON FIRE" : "ON THE BOARD" }); return; } frame = requestAnimationFrame(tick); }; frame = requestAnimationFrame(tick); return () => cancelAnimationFrame(frame); }, [started, score, onFinish]);
   const marker = ((elapsed % 1800) / 1800) * 100;
   const tap = () => { if (!started) { startAt.current = Date.now(); setScore(0); setStreak(0); setStarted(true); return; } const accuracy = Math.max(0, 1 - Math.abs(marker - 52) / 18); const points = Math.round(accuracy * 100); setScore((value) => value + points + streak * 5); setStreak((value) => points > 30 ? value + 1 : 0); };
@@ -118,7 +118,7 @@ function BeatDrop({ active, onFinish }: { active: boolean; onFinish: (result: Ga
 
 function Slipstream({ active, onFinish }: { active: boolean; onFinish: (result: GameResult) => void }) {
   const [started, setStarted] = useState(false); const [runner, setRunner] = useState(50); const [seconds, setSeconds] = useState(20); const startAt = useRef(0); const runnerRef = useRef(50);
-  useEffect(() => { if (!active) setStarted(false); }, [active]);
+  useEffect(() => { if (!active) { const stop = window.setTimeout(() => setStarted(false), 0); return () => window.clearTimeout(stop); } }, [active]);
   useEffect(() => { if (!started) return; const interval = window.setInterval(() => { const elapsed = Date.now() - startAt.current; const left = Math.max(0, 20 - elapsed / 1000); setSeconds(left); if (elapsed >= 20_000) { window.clearInterval(interval); setStarted(false); onFinish({ score: 1200 + Math.round(runnerRef.current * 4), durationMs: elapsed, label: "CLEAN RUN" }); } }, 80); return () => window.clearInterval(interval); }, [started, onFinish]);
   const move = (event: React.PointerEvent<HTMLButtonElement>) => { const rect = event.currentTarget.getBoundingClientRect(); const x = Math.max(10, Math.min(90, ((event.clientX - rect.left) / rect.width) * 100)); runnerRef.current = x; setRunner(x); };
   const start = () => { startAt.current = Date.now(); setSeconds(20); setStarted(true); };
@@ -128,7 +128,7 @@ function Slipstream({ active, onFinish }: { active: boolean; onFinish: (result: 
 function Blinkstack({ active, onFinish }: { active: boolean; onFinish: (result: GameResult) => void }) {
   const [sequence, setSequence] = useState<number[]>([]); const [input, setInput] = useState<number[]>([]); const [preview, setPreview] = useState(false); const [flash, setFlash] = useState<number | null>(null); const [running, setRunning] = useState(false);
   const newRound = useCallback((current: number[]) => { const next = [...current, Math.floor(Math.random() * 4)]; setSequence(next); setInput([]); setPreview(true); next.forEach((tile, index) => window.setTimeout(() => setFlash(tile), 350 + index * 500)); window.setTimeout(() => { setFlash(null); setPreview(false); }, 500 + next.length * 500); }, []);
-  useEffect(() => { if (!active) { setRunning(false); setPreview(false); } }, [active]);
+  useEffect(() => { if (!active) { const stop = window.setTimeout(() => { setRunning(false); setPreview(false); }, 0); return () => window.clearTimeout(stop); } }, [active]);
   const start = () => { setRunning(true); newRound([]); };
   const press = (tile: number) => { if (!running || preview) { if (!running) start(); return; } const next = [...input, tile]; const expected = sequence[input.length]; setFlash(tile); window.setTimeout(() => setFlash(null), 160); if (tile !== expected) { setRunning(false); onFinish({ score: Math.max(20, (sequence.length - 1) * 100), durationMs: Math.max(700, sequence.length * 500), label: `LEVEL ${Math.max(1, sequence.length - 1)}` }); return; } if (next.length === sequence.length) { window.setTimeout(() => newRound(sequence), 350); } else setInput(next); };
   return <div className="blink-board"><div className="blink-copy"><span>LEVEL</span><strong>{Math.max(1, sequence.length)}</strong><p>{!running ? "TAP A TILE TO START" : preview ? "WATCH" : "REPEAT"}</p></div><div className="tile-grid">{[0, 1, 2, 3].map((tile) => <button key={tile} type="button" aria-label={`Pattern tile ${tile + 1}`} onClick={() => press(tile)} className={`memory-tile tile-${tile} ${flash === tile ? "is-flashing" : ""}`} />)}</div></div>;
