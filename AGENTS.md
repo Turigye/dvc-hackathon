@@ -19,6 +19,23 @@ Build a complete, usable, visually original web application from the official li
 5. Validate in a local browser on desktop and mobile after each meaningful UI milestone.
 6. Run production build, lint, typecheck, performance trace, and public deployment smoke test before submission.
 
+## Mini-game skill activation
+
+The following globally installed skills teach reusable workflows; this file remains the source of truth for Tip Tap's product contract, repository structure, score APIs, and deployment choices. Use only the skills relevant to the current milestone, and announce their use before acting.
+
+| Skill | Invoke when | Required outcome |
+| --- | --- | --- |
+| `open-source-game-port-auditor` | Before adapting any external game, library, assets, or source code | Licence/attribution decision, reusable mechanic boundary, and integration-risk report before code import. |
+| `mini-game-vertical-slice` | Creating, replacing, or porting a playable game | Placeholder-first complete loop: active start, input, score, end once, restart, off-screen teardown, clean re-entry. |
+| `game-input-and-feed-gestures` | A mechanic uses touch, drag, hold, horizontal movement, or pointer capture | Feed/game gesture ownership verified with vertical swipe preserved as escape. |
+| `mini-game-playtest-debugger` | Before claiming a game or game change works | Real pointer browser playthrough, portrait viewport checks, lifecycle repeat test, screenshot/console evidence. |
+| `procedural-game-balance` | An endless/repeatable game generates hazards, pickups, score multipliers, or difficulty | Seeded fairness/reachability tests and documented progression curve. |
+| `game-feel-and-juice` | The verified gameplay loop needs tactile, visual, haptic, or audio polish | Event-led feedback that improves clarity and replay without hiding hazards or harming responsiveness. |
+| `mobile-canvas-performance` | A playable game risks stutter, memory growth, heat, or lifecycle leaks | Measured mobile performance and teardown audit; no duplicate loops, listeners, audio, or rising memory across card cycles. |
+| `game-asset-integrator` | Replacing placeholder geometry with visual/audio assets | Original/licensed asset manifest, compressed/preloaded assets, retained gameplay geometry, and mobile-safe fallbacks. |
+
+Default sequence for a new external-mechanic game: audit source -> build vertical slice -> resolve gestures -> playtest -> balance -> add feel -> optimize -> integrate assets -> regression playtest. Do not run later phases before the previous phase has passed its stated outcome.
+
 ## Design system and references
 
 - `design.md` is the source of truth for typography, color, spacing, component geometry, contrast, responsive behavior, and motion.
