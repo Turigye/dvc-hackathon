@@ -9,6 +9,8 @@ import { Switchback } from "@/games/switchback/switchback";
 import { Stack } from "@/games/stack";
 import { Pulse } from "@/games/pulse";
 import { Reflex } from "@/games/reflex";
+import { Overload } from "@/games/overload";
+import { Swarm } from "@/games/swarm";
 import { Slice } from "@/games/slice";
 import { ColorRings } from "@/games/color-rings";
 import type { GameResult } from "@/games/types";
@@ -32,7 +34,7 @@ export function TipTapArcade() {
   const [deck, setDeck] = useState(() => buildDeck(CYCLE));
   const [activeIndex, setActiveIndex] = useState(0);
   const [deviceId, setDeviceId] = useState("");
-  const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ switchback: EMPTY, skyline: EMPTY, pulse: EMPTY, reflex: EMPTY, slice: EMPTY, "color-rings": EMPTY });
+  const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ switchback: EMPTY, skyline: EMPTY, pulse: EMPTY, reflex: EMPTY, overload: EMPTY, swarm: EMPTY, slice: EMPTY, "color-rings": EMPTY });
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
@@ -101,6 +103,8 @@ export function TipTapArcade() {
                 {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} />}
                 {card.slug === "pulse" && <Pulse active={live} onFinish={(data) => void submit("pulse", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
                 {card.slug === "reflex" && <Reflex active={live} onFinish={(data) => void submit("reflex", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
+                {card.slug === "overload" && <Overload active={live} onFinish={(data) => void submit("overload", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
+                {card.slug === "swarm" && <Swarm active={live} onFinish={(data) => void submit("swarm", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
                 {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} />}
                 {card.slug === "color-rings" && <ColorRings active={live} onFinish={(data) => void submit("color-rings", card.key, data)} />}
               </div>

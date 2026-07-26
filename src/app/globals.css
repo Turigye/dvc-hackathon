@@ -27,6 +27,8 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .world-acid { --bg1:#08251A; --bg2:#0E8A57; --pop:#C6FF00; --pop2:#FF6B00; }
 .world-electric { --bg1:#040F35; --bg2:#1157C7; --pop:#00E5FF; --pop2:#FFD400; }
 .world-ember { --bg1:#2A0A06; --bg2:#A8300F; --pop:#FFB000; --pop2:#FF4A26; }
+.world-toxic { --bg1:#101A04; --bg2:#4E7A0B; --pop:#C6FF00; --pop2:#FFB000; }
+.world-violet { --bg1:#160830; --bg2:#5B21B6; --pop:#C4B5FD; --pop2:#FF2E88; }
 
 /* ---- Stage fills the card; chrome floats above it ---- */
 .stage-host { position:absolute; inset:0; z-index:1; }
@@ -186,3 +188,14 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .dial-hub { fill:#EDE7DC; }
 .reflex-stage.is-hit .dial-arc { stroke:#C6FF00; }
 .reflex-stage.is-miss .dial-arc { stroke:#E8391B; }
+
+/* ---- OVERLOAD (blockout) ---- */
+.overload-stage { touch-action:none; }
+.core-track { position:absolute; left:50%; top:16%; bottom:22%; width:74px; transform:translateX(-50%); border:2px solid rgb(237 231 220 / .25); border-radius:6px; overflow:hidden; background:rgb(0 0 0 / .3); }
+.core-band { position:absolute; left:0; right:0; background:rgb(198 255 0 / .3); border-top:2px solid var(--pop); border-bottom:2px solid var(--pop); }
+.core-fill { position:absolute; left:0; right:0; bottom:0; background:linear-gradient(#FFB000, #FF4A26); }
+
+/* ---- SWARM (blockout) ---- */
+.swarm-stage { touch-action:none; }
+.bug { position:absolute; width:34px; height:34px; border-radius:50%; transform:translate(-50%, -50%); background:var(--pop); box-shadow:0 0 16px var(--pop); }
+.bug.is-bad { background:#E8391B; box-shadow:0 0 20px #E8391B; }
