@@ -4,7 +4,7 @@
 import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, SpeakerHigh, SpeakerSlash, Trophy } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientId } from "@/lib/client-id";
-import { isMuted, loadMutePreference, setMuted, silence } from "@/lib/audio";
+import { isMuted, loadMutePreference, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
@@ -53,6 +53,8 @@ export function TipTapArcade() {
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [account, setAccount] = useState<{ signedIn: boolean; name?: string }>({ signedIn: false });
   const [mute, setMute] = useState(true);
+  const [initials, setInitials] = useState<string | null>(null);
+  const [draft, setDraft] = useState("AAA");
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
@@ -80,10 +82,12 @@ export function TipTapArcade() {
     if (response.ok) { const board = await response.json() as LeaderboardResponse; setBoards((current) => ({ ...current, [game]: board })); }
   }, [deviceId]);
 
+  useEffect(() => { if (!mute) startMusic(games.findIndex((g) => g.slug === activeSlug)); return () => stopMusic(); }, [activeSlug, mute]);
   useEffect(() => { void loadBoard(activeSlug); const id = window.setInterval(() => void loadBoard(activeSlug), 8000); return () => clearInterval(id); }, [activeSlug, loadBoard]);
 
   const submit = useCallback(async (game: GameSlug, key: string, data: GameResult) => {
-    setResult({ key, data });
+    // Hit-stop: let the player see the frame they died on before the card lands.
+    window.setTimeout(() => setResult({ key, data }), 150);
     if (!deviceId) return;
     await fetch("/api/scores", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game, score: data.score, durationMs: data.durationMs, roundId: createClientId(), deviceId }) });
     await loadBoard(game);
@@ -123,12 +127,12 @@ export function TipTapArcade() {
               aria-label={`${game.title} game`}
             >
               <div className="stage-host">
-                {card.slug === "switchback" && <Switchback active={live} onFinish={(data) => void submit("switchback", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
+                {card.slug === "switchback" && <Switchback active={live} onFinish={(data) => void submit("switchback", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} />}
-                {card.slug === "pulse" && <Pulse active={live} onFinish={(data) => void submit("pulse", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
-                {card.slug === "reflex" && <Reflex active={live} onFinish={(data) => void submit("reflex", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
-                {card.slug === "overload" && <Overload active={live} onFinish={(data) => void submit("overload", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
-                {card.slug === "swarm" && <Swarm active={live} onFinish={(data) => void submit("swarm", card.key, data)} onRunningChange={(running) => setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current))} />}
+                {card.slug === "pulse" && <Pulse active={live} onFinish={(data) => void submit("pulse", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
+                {card.slug === "reflex" && <Reflex active={live} onFinish={(data) => void submit("reflex", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
+                {card.slug === "overload" && <Overload active={live} onFinish={(data) => void submit("overload", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
+                {card.slug === "swarm" && <Swarm active={live} onFinish={(data) => void submit("swarm", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} />}
                 {card.slug === "color-rings" && <ColorRings active={live} onFinish={(data) => void submit("color-rings", card.key, data)} />}
               </div>
@@ -161,9 +165,27 @@ export function TipTapArcade() {
                   <strong key={result.data.score}>{result.data.score}</strong>
                   <p>{result.data.label}{board.percentile ? ` — BEAT ${board.percentile}% OF PLAYERS` : ""}</p>
                   <div className="result-actions">
-                    {account.signedIn
-                      ? <span className="saved">SAVED AS {account.name}</span>
-                      : <a className="save" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> KEEP THIS SCORE</a>}
+                    {account.signedIn ? (
+                      <span className="saved">SAVED AS {account.name}</span>
+                    ) : initials ? (
+                      <span className="saved">ON THE BOARD AS {initials}</span>
+                    ) : (
+                      <div className="initials">
+                        <span className="initials-label">ENTER YOUR INITIALS</span>
+                        <div className="initials-slots">
+                          {[0, 1, 2].map((slot) => (
+                            <button key={slot} type="button" className="slot" aria-label={`Letter ${slot + 1}: ${draft[slot]}`}
+                              onClick={() => setDraft((current) => {
+                                const next = current.split("");
+                                next[slot] = String.fromCharCode(((next[slot].charCodeAt(0) - 65 + 1) % 26) + 65);
+                                return next.join("");
+                              })}>{draft[slot]}</button>
+                          ))}
+                        </div>
+                        <button type="button" className="save" onClick={() => { setInitials(draft); void fetch("/api/initials", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ deviceId, initials: draft }) }); }}>CLAIM IT</button>
+                        <a className="again" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> OR SIGN IN</a>
+                      </div>
+                    )}
                     <button type="button" className="again" onClick={() => setResult(null)}>PLAY AGAIN</button>
                   </div>
                 </div>

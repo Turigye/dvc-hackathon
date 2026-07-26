@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 /**
  * OVERLOAD — press and hold to charge the core, release before it blows.
@@ -25,6 +26,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
   const [state, setState] = useState<"idle" | "charging" | "blown">("idle");
   const world = useRef({ charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: 0 });
   const holding = useRef(false);
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(state === "charging"); }, [state, onRunningChange]);
@@ -78,6 +80,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       // supercharge instead — so greed is a real decision, not a mistake.
       const margin = w.charge - high;
       if (margin < 6 && Math.random() < 0.4) {
+        fire(50, 100 - w.at, "power");
         play("best");
         w.streak += 1;
         w.score += 60;
@@ -90,6 +93,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "OVERLOADED" });
       return;
     }
+    fire(50, 100 - w.at, "score");
     play("score");
     const accuracy = 1 - Math.abs(w.charge - w.at) / (w.width / 2);
     w.streak += 1;
@@ -118,6 +122,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
         <i className="core-band" style={{ bottom: `${band.at - band.width / 2}%`, height: `${band.width}%` }} />
         <i className="core-fill" style={{ height: `${Math.min(100, charge)}%` }} />
       </div>
+      <Bursts bursts={bursts} />
       <div className="prompt">{state === "charging" ? "RELEASE IN THE BAND" : "HOLD TO CHARGE"}</div>
     </button>
   );

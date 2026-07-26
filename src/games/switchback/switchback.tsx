@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "../types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
 import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
 
@@ -23,6 +24,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const world = useRef(state);
   const flip = useRef(false);
   const started = useRef(0);
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
@@ -38,7 +40,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       flip.current = false;
       world.current = next;
       setState(next);
-      if (next.event === "near-miss") play("near");
+      if (next.event === "near-miss") { play("near"); fire(50, 55, "power"); }
       else if (next.event === "coin" || next.event === "shield") play("pickup");
       else if (next.event === "boost") play("power");
       if (next.failed) {
@@ -55,7 +57,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [running, active]);
+  }, [running, active, fire]);
 
   useEffect(() => { if (!active) setRunning(false); }, [active]);
 
@@ -152,6 +154,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         <li><i className="k-sprint" />BOOST</li>
         <li><i className="k-chaser" />CHASER</li>
       </ul>
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO FLIP" : "TAP TO START"}</div>
     </button>
   );

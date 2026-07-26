@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 type Block = { x: number; w: number; hue: number };
 type Shard = { id: number; x: number; w: number; hue: number; dir: number };
@@ -25,6 +26,7 @@ export function Stack({ active, onFinish }: GameProps) {
   const mover = useRef<HTMLDivElement | null>(null);
   const list = useRef<Block[]>([]);
   const st = useRef({ x: 0, dir: 1, w: BASE_W, speed: 38, start: 0, hue: 318 });
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
 
@@ -82,6 +84,7 @@ export function Stack({ active, onFinish }: GameProps) {
       setShards((current) => [...current, { id: Date.now(), x: s.x < left ? s.x : right, w: trimmed, hue: s.hue, dir: s.x < left ? -1 : 1 }].slice(-3));
       setPerfect(0);
     } else {
+      fire(left + overlap / 2, 78, "power");
       play("combo");
       setPerfect((value) => value + 1);
     }
@@ -109,6 +112,7 @@ export function Stack({ active, onFinish }: GameProps) {
         ))}
         {running && <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, background: `hsl(${moverHue} 96% 66%)` }} />}
       </div>
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO DROP" : "TAP TO START"}</div>
     </button>
   );

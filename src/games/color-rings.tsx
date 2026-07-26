@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 type Gate = { id: number; y: number; angle: number; cleared: boolean };
 
@@ -20,6 +21,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
   const [running, setRunning] = useState(false);
   const [pulse, setPulse] = useState(0);
   const world = useRef({ gates: [] as Gate[], ball: 0, score: 0, speed: 20, seq: 0, start: 0 });
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
 
@@ -41,6 +43,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
           finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: w.score >= 200 ? "SPECTRUM" : "WRONG COLOUR" });
           return;
         }
+        fire(50, BALL_Y, "score");
         play("score");
         w.score += 10;
         w.ball = Math.floor(Math.random() * 4);
@@ -57,7 +60,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [running, active]);
+  }, [running, active, fire]);
 
   useEffect(() => { if (!active) setRunning(false); }, [active]);
 
@@ -81,6 +84,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
         <i key={gate.id} className={`ring ${gate.cleared ? "is-cleared" : ""}`} style={{ top: `${gate.y}%`, transform: `translate(-50%, -50%) rotate(${gate.angle}deg)`, background: `conic-gradient(${COLORS[0]} 0deg 90deg, ${COLORS[1]} 90deg 180deg, ${COLORS[2]} 180deg 270deg, ${COLORS[3]} 270deg 360deg)` }} />
       ))}
       <i key={pulse} className="rings-ball" style={{ top: `${BALL_Y}%`, background: COLORS[ball], boxShadow: `0 0 26px ${COLORS[ball]}` }} />
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "SPIN TO MATCH" : "TAP TO START"}</div>
     </button>
   );

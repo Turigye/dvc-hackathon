@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 /**
  * REFLEX — a ring sweeps around the dial. Tap while it is inside the lit arc.
@@ -24,6 +25,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
   const [decoy, setDecoy] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const world = useRef({ angle: 0, target: 90, arc: START_ARC, speed: 150, score: 0, streak: 0, dir: 1, start: 0, decoy: 180 });
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
@@ -65,6 +67,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: w.streak >= 8 ? `STREAK ${w.streak}` : `${w.score} HITS` });
       return;
     }
+    fire(50 + 36 * Math.cos((w.target - 90) * Math.PI / 180), 50 + 36 * Math.sin((w.target - 90) * Math.PI / 180), "score");
     w.streak += 1;
     play(w.streak > 3 ? "combo" : "score");
     w.score += 10 * Math.min(5, w.streak);
@@ -93,6 +96,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
         <line className="dial-hand" x1="50" y1="50" x2="50" y2="12" transform={`rotate(${angle} 50 50)`} />
         <circle className="dial-hub" cx="50" cy="50" r="4" />
       </svg>
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP ON THE ARC" : "TAP TO START"}</div>
     </button>
   );

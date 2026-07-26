@@ -58,6 +58,7 @@ export function setMuted(next: boolean) {
   muted = next;
   if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, next ? "on" : "off");
   if (!next) ensureContext();
+  if (next) stopMusic();
   if (master && context) master.gain.setTargetAtTime(next ? 0 : 0.9, context.currentTime, 0.01);
   return muted;
 }
@@ -99,6 +100,53 @@ export function play(cue: Cue) {
     osc.start(start);
     osc.stop(start + seconds + 0.02);
   }
+}
+
+/* ---- Background music ----------------------------------------------------
+ * Slow procedural pads rather than a soundtrack file: nothing to download, no
+ * licence surface, and each world gets its own root note so swiping between
+ * games changes the mood. Deliberately quiet and sparse — it should sit under
+ * the cues, never compete with them.
+ */
+
+const SCALE = [0, 3, 5, 7, 10, 12];
+let musicTimer: number | null = null;
+let musicRoot = 110;
+
+export function startMusic(worldIndex: number) {
+  stopMusic();
+  if (muted) return;
+  const ctx = ensureContext();
+  if (!ctx || !master) return;
+  musicRoot = [110, 98, 123.5, 87, 130.8, 116.5, 103.8, 92.5][worldIndex % 8];
+  let step = 0;
+  const voice = () => {
+    if (muted || !context || !master) return;
+    const semitone = SCALE[step % SCALE.length];
+    const freq = musicRoot * Math.pow(2, semitone / 12);
+    for (const mult of [1, 1.5]) {
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      const now = context.currentTime;
+      osc.type = "sine";
+      osc.frequency.value = freq * mult;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.035, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.6);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.onended = () => gain.disconnect();
+      osc.start(now);
+      osc.stop(now + 2.7);
+    }
+    step += step % 3 === 2 ? 2 : 1;
+  };
+  voice();
+  musicTimer = window.setInterval(voice, 2400);
+}
+
+export function stopMusic() {
+  if (musicTimer !== null) { window.clearInterval(musicTimer); musicTimer = null; }
 }
 
 /** Stops everything immediately — used when a card leaves the viewport. */

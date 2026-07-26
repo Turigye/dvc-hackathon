@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 /**
  * PULSE — tap to rise, fall when you don't. Each gate has a coloured half;
@@ -28,6 +29,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
   const [running, setRunning] = useState(false);
   const world = useRef({ y: 50, vy: 0, gates: [] as Gate[], phase: 0, score: 0, speed: 26, seq: 0, start: 0 });
   const lift = useRef(false);
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
@@ -63,6 +65,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
             return;
           }
           gate.cleared = true;
+          fire(16, w.y, "score");
           play("score");
           w.score += 10;
           w.phase = w.phase === 0 ? 1 : 0;
@@ -84,7 +87,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [running, active]);
+  }, [running, active, fire]);
 
   useEffect(() => { if (!active) setRunning(false); }, [active]);
 
@@ -109,6 +112,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
         </div>
       ))}
       <i className="pulse-bird" style={{ top: `${y}%`, background: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO RISE" : "TAP TO START"}</div>
     </button>
   );

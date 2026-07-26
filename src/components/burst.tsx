@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type BurstSpec = { id: number; x: number; y: number; tone: "score" | "fail" | "power" };
 
@@ -28,7 +28,8 @@ export function useBursts() {
     const id = window.setTimeout(() => setBursts((current) => current.slice(1)), 520);
     return () => window.clearTimeout(id);
   }, [bursts]);
-  const fire = (x: number, y: number, tone: BurstSpec["tone"] = "score") =>
+  const fire = useCallback((x: number, y: number, tone: BurstSpec["tone"] = "score") => {
     setBursts((current) => [...current.slice(-3), { id: Date.now() + Math.random(), x, y, tone }]);
+  }, []);
   return { bursts, fire };
 }
