@@ -2,7 +2,7 @@
 
 /* Thumbtrance — vivid per-game colour worlds. Full-bleed vertical feed.
    Each card is its own saturated world; chrome is overlaid, never stacked. */
-:root { --ink:#08070C; --paper:#FFFFFF; --dim:rgb(255 255 255 / .62); --line:rgb(255 255 255 / .18); }
+:root { --ink:#151033; --paper:#FFFFFF; --dim:rgb(255 255 255 / .74); --line:rgb(255 255 255 / .26); }
 
 * { box-sizing:border-box; }
 html, body { height:100%; }
@@ -21,14 +21,14 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .feed { height:100dvh; overflow-y:auto; scroll-snap-type:y mandatory; scrollbar-width:none; }
 .feed::-webkit-scrollbar { display:none; }
 .card { position:relative; height:100dvh; overflow:hidden; scroll-snap-align:start; scroll-snap-stop:always; background:radial-gradient(120% 78% at 50% 6%, var(--bg2) 0%, var(--bg1) 62%, var(--ink) 100%); }
-.card::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(90% 55% at 50% 46%, transparent 40%, rgb(0 0 0 / .5) 100%); }
+.card::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(95% 62% at 50% 44%, transparent 52%, rgb(10 6 30 / .32) 100%); }
 
-.world-cobalt { --bg1:#0B0F1A; --bg2:#132A6B; --pop:#F5A623; --pop2:#1B48E0; }
-.world-acid { --bg1:#08251A; --bg2:#0E8A57; --pop:#C6FF00; --pop2:#FF6B00; }
-.world-electric { --bg1:#040F35; --bg2:#1157C7; --pop:#00E5FF; --pop2:#FFD400; }
-.world-ember { --bg1:#2A0A06; --bg2:#A8300F; --pop:#FFB000; --pop2:#FF4A26; }
-.world-toxic { --bg1:#101A04; --bg2:#4E7A0B; --pop:#C6FF00; --pop2:#FFB000; }
-.world-violet { --bg1:#160830; --bg2:#5B21B6; --pop:#C4B5FD; --pop2:#FF2E88; }
+.world-cobalt { --bg1:#16277F; --bg2:#3A6BFF; --pop:#FFD200; --pop2:#FF4A8D; }
+.world-acid { --bg1:#046B45; --bg2:#25E39A; --pop:#FFF056; --pop2:#FF6B00; }
+.world-electric { --bg1:#0A3D91; --bg2:#26C6FF; --pop:#FFE14D; --pop2:#FF3D9A; }
+.world-ember { --bg1:#9C2A00; --bg2:#FF8A2B; --pop:#FFF0A5; --pop2:#FF2E88; }
+.world-toxic { --bg1:#2F6B00; --bg2:#A8E10C; --pop:#FFFFFF; --pop2:#FF6B00; }
+.world-violet { --bg1:#4B1AAE; --bg2:#A78BFA; --pop:#FFE14D; --pop2:#FF2E88; }
 
 /* ---- Stage fills the card; chrome floats above it ---- */
 .stage-host { position:absolute; inset:0; z-index:1; }
@@ -199,3 +199,5 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .swarm-stage { touch-action:none; }
 .bug { position:absolute; width:34px; height:34px; border-radius:50%; transform:translate(-50%, -50%); background:var(--pop); box-shadow:0 0 16px var(--pop); }
 .bug.is-bad { background:#E8391B; box-shadow:0 0 20px #E8391B; }
+
+.saved { display:flex; min-height:44px; align-items:center; justify-content:center; border-radius:999px; border:1.5px solid var(--pop); color:var(--pop); font-size:.7rem; font-weight:700; letter-spacing:.1em; }

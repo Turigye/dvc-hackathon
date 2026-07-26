@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 
 type Shape = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number; spin: number; rot: number };
-type Half = { id: number; x: number; y: number; dir: number; hue: number; size: number; born: number };
+type Half = { id: string; x: number; y: number; dir: number; hue: number; size: number; born: number };
 type Point = { x: number; y: number };
 
 const GRAVITY = 42;
@@ -76,7 +76,7 @@ export function Slice({ active, onFinish }: GameProps) {
     w.score += hit.length * 10 * Math.max(1, w.stroke);
     setScore(w.score);
     setCombo(w.stroke);
-    setHalves((current) => [...current, ...hit.flatMap((shape) => [-1, 1].map((dir) => ({ id: shape.id * 2 + dir, x: shape.x, y: shape.y, dir, hue: shape.hue, size: shape.size, born: Date.now() })))].slice(-12));
+    setHalves((current) => [...current, ...hit.flatMap((shape) => [-1, 1].map((dir) => ({ id: `${shape.id}:${dir}`, x: shape.x, y: shape.y, dir, hue: shape.hue, size: shape.size, born: Date.now() })))].slice(-12));
   };
 
   const track = (event: React.PointerEvent<HTMLDivElement>) => {

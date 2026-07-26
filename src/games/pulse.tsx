@@ -51,10 +51,9 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       for (const gate of w.gates) {
         if (gate.cleared || gate.x > 22) continue;
         if (gate.x < 12) {
-          const inTop = w.y < 50 - GAP / 2;
-          const inBottom = w.y > 50 + GAP / 2;
-          const safeSide = gate.safeTop ? inTop : inBottom;
-          if (!safeSide) {
+          const gapCentre = gate.safeTop ? 32 : 68;
+          const through = Math.abs(w.y - gapCentre) <= GAP / 2;
+          if (!through) {
             setRunning(false);
             finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: `${w.score} GATES` });
             return;
@@ -99,8 +98,8 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong></div>
       {gates.map((gate) => (
         <div key={gate.id} className="pulse-gate" style={{ left: `${gate.x}%` }}>
-          <i className={gate.safeTop ? "is-safe" : "is-blocked"} style={{ height: `${50 - GAP / 2}%`, top: 0 }} />
-          <i className={gate.safeTop ? "is-blocked" : "is-safe"} style={{ height: `${50 - GAP / 2}%`, bottom: 0 }} />
+          <i className="is-blocked" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }} />
+          <i className="is-blocked" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }} />
         </div>
       ))}
       <i className="pulse-bird" style={{ top: `${y}%`, background: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />

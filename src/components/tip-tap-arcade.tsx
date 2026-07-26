@@ -37,10 +37,13 @@ export function TipTapArcade() {
   const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ switchback: EMPTY, skyline: EMPTY, pulse: EMPTY, reflex: EMPTY, overload: EMPTY, swarm: EMPTY, slice: EMPTY, "color-rings": EMPTY });
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const [account, setAccount] = useState<{ signedIn: boolean; name?: string }>({ signedIn: false });
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { setDeviceId(getDeviceId()); }, []);
+  // Ask once who is signed in. A logged-in player should never be prompted again.
+  useEffect(() => { void fetch("/api/session", { cache: "no-store" }).then((r) => r.json()).then(setAccount).catch(() => {}); }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
@@ -137,7 +140,9 @@ export function TipTapArcade() {
                   <strong>{result.data.score}</strong>
                   <p>{result.data.label}{board.percentile ? ` — BEAT ${board.percentile}% OF PLAYERS` : ""}</p>
                   <div className="result-actions">
-                    <a className="save" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> KEEP THIS SCORE</a>
+                    {account.signedIn
+                      ? <span className="saved">SAVED AS {account.name}</span>
+                      : <a className="save" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> KEEP THIS SCORE</a>}
                     <button type="button" className="again" onClick={() => setResult(null)}>PLAY AGAIN</button>
                   </div>
                 </div>

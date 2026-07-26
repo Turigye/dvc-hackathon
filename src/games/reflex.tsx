@@ -53,7 +53,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
       return;
     }
     const delta = Math.abs(((w.angle - w.target + 540) % 360) - 180);
-    const hit = delta > 180 - w.arc / 2;
+    const hit = delta <= w.arc / 2;
     if (!hit) {
       setRunning(false);
       setFlash("miss");
