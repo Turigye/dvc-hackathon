@@ -43,14 +43,15 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
         const fromLeft = Math.random() < 0.5;
         const speed = 10 + Math.random() * 8 + w.score / 180;
         const queen = w.score > 90 && !w.bugs.some((bug) => bug.queen) && Math.random() < 0.3;
+        const bad = w.score > 60 && Math.random() < 0.24;
         w.bugs.push({
           id: ++w.seq,
           x: fromLeft ? 6 : 94,
           y: 18 + Math.random() * 60,
           vx: fromLeft ? speed : -speed,
           vy: (Math.random() - 0.5) * 12,
-          r: queen ? 10.5 : 7.8,
-          bad: w.score > 60 && Math.random() < 0.24,
+          r: queen ? 11.3 : bad ? 9.5 : 8.2,
+          bad,
           queen,
           spawnIn: 1.1,
         });
@@ -66,7 +67,7 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
           bug.spawnIn = (bug.spawnIn ?? 1.1) - dt;
           if (bug.spawnIn <= 0) {
             bug.spawnIn = 1.5;
-            hatched.push({ id: ++w.seq, x: bug.x, y: bug.y, vx: bug.vx * 1.3, vy: (Math.random() - 0.5) * 18, r: 7.4, bad: false });
+            hatched.push({ id: ++w.seq, x: bug.x, y: bug.y, vx: bug.vx * 1.3, vy: (Math.random() - 0.5) * 18, r: 8.2, bad: false });
           }
         }
         bug.x += bug.vx * dt;
@@ -135,10 +136,10 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
             active={active}
             className="swarm-bug-art"
             src={bug.queen
-              ? "/assets/games/swarm/sprite-breeding-pair.png"
+              ? "/assets/games/swarm/sprite-queen-v2.png"
               : bug.bad
-                ? "/assets/games/swarm/sprite-bug-predator.png"
-                : `/assets/games/swarm/sprite-bug-${["cyan", "pink", "lavender", "violet"][bug.id % 4]}.png`}
+                ? "/assets/games/swarm/sprite-bug-predator-v2.png"
+                : `/assets/games/swarm/sprite-bug-${["cyan", "pink", "lavender", "violet"][bug.id % 4]}-v2.png`}
           />
         </i>
       ))}

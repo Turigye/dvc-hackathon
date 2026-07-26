@@ -5,7 +5,7 @@ import { ArrowDown, GameController, GoogleLogo, Pause, Play, Ranking, ShareNetwo
 import { Boot, GameMenu } from "@/components/boot";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientId } from "@/lib/client-id";
-import { isMuted, loadMutePreference, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
+import { isMuted, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
@@ -71,7 +71,7 @@ export function TipTapArcade() {
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { setDeviceId(getDeviceId()); setMute(loadMutePreference()); }, []);
+  useEffect(() => { setDeviceId(getDeviceId()); setMute(setMuted(true)); }, []);
   useEffect(() => {
     // ?nopause=1 keeps the feed running while hidden so automated visual QA can
     // screenshot live gameplay. Never set in normal use.
@@ -274,8 +274,8 @@ export function TipTapArcade() {
       {!booted && (
         <Boot
           muted={mute}
-          onStart={() => { setBooted(true); if (mute) setMute(setMuted(false)); }}
-          onMenu={() => { if (mute) setMute(setMuted(false)); setMenuOpen(true); }}
+          onStart={() => setBooted(true)}
+          onMenu={() => setMenuOpen(true)}
           onToggleSound={() => setMute(setMuted(!isMuted()))}
           signedIn={account.signedIn}
           playerName={account.name}

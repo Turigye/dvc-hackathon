@@ -128,9 +128,9 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       <div className="core-track">
         <i className="core-band" style={{ bottom: `${band.at - band.width / 2}%`, height: `${band.width}%` }} />
         <i className="core-fill" style={{ height: `${Math.min(100, charge)}%` }} />
-        <GameArt active={active} className="core-emblem-art" src={`/assets/games/overload/sprite-core-${charge > band.at + band.width / 2 || state === "blown" ? "overcharged" : "calm"}.png`} />
+        <GameArt active={active} className="core-emblem-art" src={`/assets/games/overload/sprite-core-${charge > band.at + band.width / 2 || state === "blown" ? "overcharged" : "calm"}-v2.png`} />
       </div>
-      <GameArt active={active} className="overload-operator-art" src="/assets/games/overload/sprite-operator-bot.png" />
+      <GameArt active={active} className="overload-operator-art" src="/assets/games/overload/sprite-operator-v2.png" />
       <Bursts bursts={bursts} />
       <div className="prompt">{state === "charging" ? "RELEASE IN THE BAND" : "HOLD TO CHARGE"}</div>
     </button>

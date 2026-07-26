@@ -36,6 +36,7 @@ const CUES: Record<Cue, Voice[]> = {
 };
 
 const STORAGE_KEY = "thumbtrance-muted";
+const MASTER_LEVEL = 0.5;
 let context: AudioContext | null = null;
 let master: GainNode | null = null;
 let muted = true;
@@ -59,7 +60,7 @@ export function setMuted(next: boolean) {
   if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, next ? "on" : "off");
   if (!next) ensureContext();
   if (next) stopMusic();
-  if (master && context) master.gain.setTargetAtTime(next ? 0 : 0.9, context.currentTime, 0.01);
+  if (master && context) master.gain.setTargetAtTime(next ? 0 : MASTER_LEVEL, context.currentTime, 0.01);
   return muted;
 }
 
@@ -69,7 +70,7 @@ function ensureContext() {
   if (!Ctor) return null;
   context = new Ctor();
   master = context.createGain();
-  master.gain.value = muted ? 0 : 0.9;
+  master.gain.value = muted ? 0 : MASTER_LEVEL;
   master.connect(context.destination);
   return context;
 }
@@ -265,5 +266,5 @@ export function stopMusic() {
 export function silence() {
   if (!context || !master) return;
   master.gain.setTargetAtTime(0, context.currentTime, 0.005);
-  if (!muted && master) master.gain.setTargetAtTime(0.9, context.currentTime + 0.06, 0.01);
+  if (!muted && master) master.gain.setTargetAtTime(MASTER_LEVEL, context.currentTime + 0.06, 0.01);
 }

@@ -127,11 +127,11 @@ export function Stack({ active, onFinish, onRunningChange }: GameProps) {
         ))}
         {running && (
           <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, ["--tint" as string]: `hsl(${moverHue} 96% 66%)` }}>
-            <GameArt active={active} className="stack-drone-art" src="/assets/games/skyline/sprite-builder-drone.png" />
+            <GameArt active={active} className="stack-drone-art" src="/assets/games/skyline/sprite-builder-drone-v2.png" />
           </div>
         )}
       </div>
-      {perfect > 0 && <GameArt active={active} className="stack-perfect-art" src="/assets/games/skyline/sprite-perfect-burst.png" />}
+      {perfect > 0 && <GameArt active={active} className="stack-perfect-art" src="/assets/games/skyline/sprite-perfect-burst-v2.png" />}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO DROP" : "TAP TO START"}</div>
     </button>

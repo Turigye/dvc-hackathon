@@ -116,7 +116,7 @@ export function Slice({ active, onFinish, onRunningChange }: GameProps) {
     w.score += (hit.length * 10 + chainBonus * 25) * Math.max(1, w.stroke);
     setScore(w.score);
     setCombo(w.stroke);
-    setHalves((current) => [...current, ...cutShapes.flatMap((shape) => [-1, 1].map((dir) => ({ id: `${shape.id}:${dir}`, x: shape.x, y: shape.y, dir, hue: shape.hue, size: shape.size, born: Date.now(), kind: shape.kind })))].slice(-12));
+    setHalves((current) => [...current, ...cutShapes.map((shape) => ({ id: `${shape.id}:split`, x: shape.x, y: shape.y, dir: shape.vx >= 0 ? 1 : -1, hue: shape.hue, size: shape.size, born: Date.now(), kind: shape.kind }))].slice(-8));
   };
 
   const track = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -173,12 +173,12 @@ export function Slice({ active, onFinish, onRunningChange }: GameProps) {
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {shapes.map((shape) => (
         <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, ["--tint" as string]: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }}>
-          <GameArt active={active} className="slice-fruit-art" src={`/assets/games/slice/sprite-${shape.bomb ? "bomb" : shape.kind}.png`} />
+          <GameArt active={active} className="slice-fruit-art" src={`/assets/games/slice/sprite-${shape.bomb ? "bomb" : shape.kind}-v2.png`} />
         </i>
       ))}
       {halves.map((half) => (
         <i key={half.id} className="slice-half" style={{ left: `${half.x}%`, top: `${half.y}%`, width: `${half.size}%`, ["--tint" as string]: `hsl(${half.hue} 95% 62%)`, ["--dir" as string]: half.dir }}>
-          <GameArt active={active} className="slice-half-art" src="/assets/games/slice/sprite-split-halves.png" />
+          <GameArt active={active} className="slice-half-art" src="/assets/games/slice/sprite-split-halves-v2.png" />
         </i>
       ))}
       {trail.length > 1 && (

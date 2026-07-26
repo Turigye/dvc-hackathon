@@ -29,7 +29,7 @@ To avoid clobbering, **announce before editing a shared file** by adding a line 
 
 ## In flight
 
-_No active Codex lock. Gameplay/art recovery files released after the 2026-07-26 14:10 EAT handoff._
+**Codex lock — user-directed art-direction correction:** `src/app/globals.css`, `src/components/tip-tap-arcade.tsx`, `src/lib/audio.ts`, all seven live game components, `public/assets/games/{switchback,skyline,pulse,overload,swarm,slice}/*`, and `public/assets/manifest.md`. Intent: remove remaining blockout marks, restore the approved kinetic-poster hierarchy with newly cut gameplay-scale art across the live pack, restore Reflex's readable pre-overlay presentation, and set audio to muted by default with a 50% ceiling. Release condition: visual/pointer/audio browser verification, code gates, commit, deployment smoke test, and handoff row.
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.
 
@@ -46,6 +46,7 @@ Decisions here are binding. A later entry must explicitly name the decision it r
 | D-003 | 2026-07-25 | Secrets, OAuth provider setup, Supabase project connection, and Vercel account access require user authorization and never enter Git. | User | Active |
 | D-004 | 2026-07-26 | Supersedes the presentation-only interpretation of Game component rule 4: every game receives original foreground sprites and effect assets, but simulation/collision geometry remains code-native and independent of raster bounds. | User | Active |
 | D-005 | 2026-07-26 | Refines D-004: foreground art must render in separate aspect-preserving presentation layers. Raster bounds never define collision geometry, and square assets may not be stretched across variable-width blocks, gates, bands, tracks, or meters. | User | Active |
+| D-006 | 2026-07-26 | The original Switchback kinetic-poster language is the house visual grammar across the live game pack: inky foundations, cream keylines, saturated cobalt/vermilion/amber/cyan accents, angular silhouettes, and contained print-like art. Individual games retain distinct palettes and mechanics. Reflex keeps its readable code-native dial instead of a competing raster overlay. | User | Active |
 
 ## Confirmed product decisions
 

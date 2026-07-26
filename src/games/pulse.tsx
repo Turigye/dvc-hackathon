@@ -109,17 +109,17 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       {gates.map((gate) => (
         <div key={gate.id} className={`pulse-gate ${gate.liar ? "is-liar" : ""}`} style={{ left: `${gate.x}%` }}>
           <i className="is-blocked gate-top" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }}>
-            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}.png`} />
+            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}-v2.png`} />
           </i>
           <i className="is-blocked gate-bottom" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }}>
-            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}.png`} />
+            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}-v2.png`} />
           </i>
         </div>
       ))}
       <span className="pulse-bird" style={{ top: `${y}%`, ["--tint" as string]: COLORS[phase] }}>
-        <GameArt active={active} className="pulse-trail-art" src="/assets/games/pulse/sprite-energy-trail.png" />
+        <GameArt active={active} className="pulse-trail-art" src="/assets/games/pulse/sprite-energy-trail-v2.png" />
         <i className="pulse-bird-fallback" />
-        <GameArt active={active} className="pulse-bird-art" src={`/assets/games/pulse/sprite-bird-${phase === 0 ? "magenta" : "cyan"}.png`} />
+        <GameArt active={active} className="pulse-bird-art" src={`/assets/games/pulse/sprite-bird-${phase === 0 ? "magenta" : "cyan"}-v2.png`} />
       </span>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO RISE" : "TAP TO START"}</div>

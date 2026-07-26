@@ -1,12 +1,12 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- the game loop drives state from rAF. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { GameProps } from "../types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
-import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
+import { RAIL_OFFSET, railPath, railPoint, ribbonPath } from "./geometry";
 
 type SvgArtProps = {
   active: boolean;
@@ -15,21 +15,32 @@ type SvgArtProps = {
   x: number;
   y: number;
   size: number;
+  fallback: ReactNode;
+  groupClassName?: string;
 };
 
 /** Presentation-only SVG image. Its bounds never participate in simulation. */
-function SvgArt({ active, className, src, x, y, size }: SvgArtProps) {
-  if (!active) return null;
+function SvgArt({ active, className, src, x, y, size, fallback, groupClassName }: SvgArtProps) {
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const ready = active && loadedSrc === src && failedSrc !== src;
   return (
-    <image
-      className={`switchback-art ${className}`}
-      href={src}
-      x={x - size / 2}
-      y={y - size / 2}
-      width={size}
-      height={size}
-      preserveAspectRatio="xMidYMid meet"
-    />
+    <g className={groupClassName}>
+      <g className="switchback-fallback" opacity={ready ? 0 : 1}>{fallback}</g>
+      {active && failedSrc !== src && (
+        <image
+          className={`switchback-art ${className}`}
+          href={src}
+          x={x - size / 2}
+          y={y - size / 2}
+          width={size}
+          height={size}
+          preserveAspectRatio="xMidYMid meet"
+          onLoad={() => setLoadedSrc(src)}
+          onError={() => setFailedSrc(src)}
+        />
+      )}
+    </g>
   );
 }
 
@@ -127,14 +138,8 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       <svg className="switchback-view" viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <polyline className="ribbon-wall" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} transform="translate(0 5)" />
         <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
-        <polyline className="centre-stripes" points={ribbonPath(first, last)} />
         <polyline className="rail-line" points={railPath(first, last, 0)} />
         <polyline className="rail-line" points={railPath(first, last, 1)} />
-
-        {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
-          const { x, y } = centre(seg, 0);
-          return <circle key={`v${seg}`} className="vertex" cx={x} cy={y} r={3} />;
-        })}
 
         {state.drags.map((drag) => {
           const start = railPoint(drag.segment, drag.from, drag.rail);
@@ -147,25 +152,31 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);
           const art = railPoint(hazard.segment, (hazard.from + Math.min(1, hazard.to)) / 2, hazard.rail);
           return (
-            <g key={hazard.id} className={`hazard is-${hazard.kind}`}>
-              <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
-              {hazard.kind === "sweeper" && (() => {
+            <SvgArt
+              key={hazard.id}
+              active={active}
+              className={`is-${hazard.kind}`}
+              groupClassName={`hazard is-${hazard.kind}`}
+              src={`/assets/games/switchback/sprite-${hazard.kind}-v2.png`}
+              x={art.x}
+              y={art.y}
+              size={hazard.kind === "sweeper" ? 28 : hazard.kind === "piston" ? 24 : 22}
+              fallback={<>
+                <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
+                {hazard.kind === "sweeper" && (() => {
                 const other = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail === 0 ? 1 : 0);
                 const pivot = railPoint(hazard.segment, hazard.switchAt ?? hazard.from, hazard.rail === 0 ? 1 : 0);
                 return <line className="sweep-arm" x1={pivot.x} y1={pivot.y} x2={other.x} y2={other.y} strokeWidth={10} strokeLinecap="round" />;
-              })()}
-              <SvgArt active={active} className={`is-${hazard.kind}`} src={`/assets/games/switchback/sprite-${hazard.kind}.png`} x={art.x} y={art.y} size={hazard.kind === "sweeper" ? 17 : 14} />
-            </g>
+                })()}
+              </>}
+            />
           );
         })}
 
         {state.pickups.filter((pickup) => !pickup.taken).map((pickup) => {
           const { x, y } = railPoint(pickup.segment, pickup.at, pickup.rail);
           return (
-            <g key={pickup.id}>
-              <circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />
-              <SvgArt active={active} className={`is-${pickup.kind}`} src={`/assets/games/switchback/sprite-${pickup.kind}.png`} x={x} y={y} size={11} />
-            </g>
+            <SvgArt key={pickup.id} active={active} className={`is-${pickup.kind}`} src={`/assets/games/switchback/sprite-${pickup.kind}-v2.png`} x={x} y={y} size={12} fallback={<circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />} />
           );
         })}
 
@@ -174,24 +185,12 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           const spot = railPoint(segmentOf(trail), offsetOf(trail), state.rail);
           const close = state.chaseGap < 1.2;
           return (
-            <g>
-              <circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />
-              <SvgArt active={active} className="is-chaser" src="/assets/games/switchback/sprite-chaser.png" x={spot.x} y={spot.y} size={16} />
-            </g>
+            <SvgArt active={active} className="is-chaser" src="/assets/games/switchback/sprite-chaser-v2.png" x={spot.x} y={spot.y} size={17} fallback={<circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />} />
           );
         })()}
 
-        <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
-        <SvgArt active={active} className="is-runner" src="/assets/games/switchback/sprite-runner.png" x={runner.x} y={runner.y} size={17} />
+        <SvgArt active={active} className="is-runner" src="/assets/games/switchback/sprite-runner-v2.png" x={runner.x} y={runner.y} size={18} fallback={<circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />} />
       </svg>
-
-      <ul className="key" aria-label="What the shapes mean">
-        <li><i className="k-hazard" />DODGE</li>
-        <li><i className="k-coin" />GRAB</li>
-        <li><i className="k-drag" />SLOW</li>
-        <li><i className="k-sprint" />BOOST</li>
-        <li><i className="k-chaser" />CHASER</li>
-      </ul>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO FLIP" : "TAP TO START"}</div>
     </button>

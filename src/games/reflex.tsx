@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
-import { GameArt } from "@/components/game-art";
 
 /**
  * REFLEX — a ring sweeps around the dial. Tap while it is inside the lit arc.
@@ -97,9 +96,6 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
         <line className="dial-hand" x1="50" y1="50" x2="50" y2="12" transform={`rotate(${angle} 50 50)`} />
         <circle className="dial-hub" cx="50" cy="50" r="4" />
       </svg>
-      <GameArt active={active} className="reflex-eye-art" src="/assets/games/reflex/sprite-clockwork-eye.png" />
-      <GameArt active={active} className="reflex-hit-art" src="/assets/games/reflex/sprite-perfect-burst.png" />
-      <GameArt active={active} className="reflex-miss-art" src="/assets/games/reflex/sprite-miss-burst.png" />
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP ON THE ARC" : "TAP TO START"}</div>
     </button>
