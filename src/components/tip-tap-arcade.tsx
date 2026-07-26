@@ -3,6 +3,7 @@
 
 import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, Trophy } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createClientId } from "@/lib/client-id";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
@@ -14,7 +15,6 @@ import { Swarm } from "@/games/swarm";
 import { Slice } from "@/games/slice";
 import { ColorRings } from "@/games/color-rings";
 import type { GameResult } from "@/games/types";
-import { createClientId } from "@/lib/client-id";
 
 const EMPTY: LeaderboardResponse = { entries: [], playerRank: null, percentile: 0, playerBest: 0 };
 const CYCLE = 4;
