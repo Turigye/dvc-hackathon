@@ -73,6 +73,17 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       return; // Undercharged: no score, but the core survives. Try again.
     }
     if (w.charge > high) {
+      // Overcharging is a gamble, not a certainty. Just past the band it can
+      // supercharge instead — so greed is a real decision, not a mistake.
+      const margin = w.charge - high;
+      if (margin < 6 && Math.random() < 0.4) {
+        w.streak += 1;
+        w.score += 60;
+        w.charge = 0;
+        setScore(w.score); setStreak(w.streak); setCharge(0);
+        if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.([12, 40, 12]);
+        return;
+      }
       setState("blown");
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "OVERLOADED" });
       return;

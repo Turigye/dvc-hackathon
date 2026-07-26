@@ -20,6 +20,7 @@ export function Stack({ active, onFinish }: GameProps) {
   const [running, setRunning] = useState(false);
   const [perfect, setPerfect] = useState(0);
   const [moverHue, setMoverHue] = useState(331);
+  const [sway, setSway] = useState(0);
   const mover = useRef<HTMLDivElement | null>(null);
   const list = useRef<Block[]>([]);
   const st = useRef({ x: 0, dir: 1, w: BASE_W, speed: 38, start: 0, hue: 318 });
@@ -39,6 +40,9 @@ export function Stack({ active, onFinish }: GameProps) {
       if (s.x <= 0) { s.x = 0; s.dir = 1; }
       if (s.x >= max) { s.x = max; s.dir = -1; }
       if (mover.current) { mover.current.style.left = `${s.x}%`; mover.current.style.width = `${s.w}%`; }
+      // Height buys instability: the whole tower leans further the taller it gets.
+      const height = list.current.length;
+      if (height > 4) setSway(Math.sin(now / 620) * Math.min(7, (height - 4) * 0.42));
       frame = requestAnimationFrame(step);
     };
     frame = requestAnimationFrame(step);
@@ -56,6 +60,7 @@ export function Stack({ active, onFinish }: GameProps) {
       setBlocks(list.current);
       setShards([]);
       setPerfect(0);
+      setSway(0);
       setMoverHue(331);
       setRunning(true);
       return;
@@ -92,7 +97,7 @@ export function Stack({ active, onFinish }: GameProps) {
   return (
     <button type="button" className="stage stack-stage" onPointerDown={drop} aria-label={running ? "Tap to drop the block" : "Tap to start Stack"}>
       <div className="hud"><span>HEIGHT</span><strong>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}</div>
-      <div className="stack-well">
+      <div className="stack-well" style={{ transform: `rotate(${sway.toFixed(2)}deg)`, transformOrigin: "50% 100%" }}>
         {shards.map((shard) => (
           <i key={shard.id} className="stack-shard" style={{ left: `${shard.x}%`, width: `${shard.w}%`, bottom: `${(blocks.length - 1) * ROW - offset}px`, background: `hsl(${shard.hue} 92% 62%)`, ["--dir" as string]: shard.dir }} />
         ))}

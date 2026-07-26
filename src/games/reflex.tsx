@@ -20,8 +20,9 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [flash, setFlash] = useState<"hit" | "miss" | null>(null);
+  const [decoy, setDecoy] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
-  const world = useRef({ angle: 0, target: 90, arc: START_ARC, speed: 150, score: 0, streak: 0, dir: 1, start: 0 });
+  const world = useRef({ angle: 0, target: 90, arc: START_ARC, speed: 150, score: 0, streak: 0, dir: 1, start: 0, decoy: 180 });
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
@@ -36,6 +37,8 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
       const w = world.current;
       w.angle = (w.angle + w.dir * w.speed * dt + 360) % 360;
       setAngle(w.angle);
+      // Past 6 hits a faster decoy hand joins the dial. Only the real one counts.
+      if (w.streak >= 6) { w.decoy = (w.decoy + w.dir * w.speed * 1.7 * dt + 360) % 360; setDecoy(w.decoy); }
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
@@ -48,8 +51,8 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
     if (!active) return;
     const w = world.current;
     if (!running) {
-      world.current = { angle: 0, target: 90, arc: START_ARC, speed: 150, score: 0, streak: 0, dir: 1, start: Date.now() };
-      setAngle(0); setTarget(90); setArc(START_ARC); setScore(0); setStreak(0); setFlash(null); setRunning(true);
+      world.current = { angle: 0, target: 90, arc: START_ARC, speed: 150, score: 0, streak: 0, dir: 1, start: Date.now(), decoy: 180 };
+      setAngle(0); setTarget(90); setArc(START_ARC); setScore(0); setStreak(0); setFlash(null); setDecoy(null); setRunning(true);
       return;
     }
     const delta = Math.abs(((w.angle - w.target + 540) % 360) - 180);
@@ -83,6 +86,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
           strokeDasharray={`${(arc / 360) * 226} 226`}
           transform={`rotate(${target - arc / 2 - 90} 50 50)`}
         />
+        {decoy !== null && <line className="dial-decoy" x1="50" y1="50" x2="50" y2="16" transform={`rotate(${decoy} 50 50)`} />}
         <line className="dial-hand" x1="50" y1="50" x2="50" y2="12" transform={`rotate(${angle} 50 50)`} />
         <circle className="dial-hub" cx="50" cy="50" r="4" />
       </svg>

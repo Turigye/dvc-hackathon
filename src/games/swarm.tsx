@@ -57,6 +57,8 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
         const gone = bug.x < -14 || bug.x > 114;
         if (!gone) { kept.push(bug); continue; }
         if (!bug.bad) {
+          // Anything you let past comes back with a friend. Ignoring the board loses.
+          w.next = Math.min(w.next, 0.18);
           w.lives -= 1;
           setLives(w.lives);
           if (w.lives <= 0) {

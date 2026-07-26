@@ -12,7 +12,7 @@ import type { GameProps } from "./types";
  * Adapted from the care package's colour/phase-gate idea, written from scratch.
  */
 
-type Gate = { id: number; x: number; safeTop: boolean; cleared?: boolean };
+type Gate = { id: number; x: number; safeTop: boolean; liar?: boolean; cleared?: boolean };
 
 const COLORS = ["#FF2E88", "#00E5FF"];
 const GRAVITY = 128;
@@ -44,14 +44,17 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       w.y += w.vy * dt;
 
       if (!w.gates.length || w.gates[w.gates.length - 1].x < 62) {
-        w.gates.push({ id: ++w.seq, x: 108, safeTop: Math.random() < 0.5 });
+        w.gates.push({ id: ++w.seq, x: 108, safeTop: Math.random() < 0.5, liar: w.score > 40 && Math.random() < 0.22 });
       }
       for (const gate of w.gates) gate.x -= w.speed * dt;
 
       for (const gate of w.gates) {
         if (gate.cleared || gate.x > 22) continue;
         if (gate.x < 12) {
-          const gapCentre = gate.safeTop ? 32 : 68;
+          // A liar gate draws its opening on the wrong side. It flickers on approach;
+          // read the flicker and go the other way.
+          const trueTop = gate.liar ? !gate.safeTop : gate.safeTop;
+          const gapCentre = trueTop ? 32 : 68;
           const through = Math.abs(w.y - gapCentre) <= GAP / 2;
           if (!through) {
             setRunning(false);
@@ -97,7 +100,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
     <button type="button" className="stage pulse-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to rise" : "Tap to start Pulse"}>
       <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong></div>
       {gates.map((gate) => (
-        <div key={gate.id} className="pulse-gate" style={{ left: `${gate.x}%` }}>
+        <div key={gate.id} className={`pulse-gate ${gate.liar ? "is-liar" : ""}`} style={{ left: `${gate.x}%` }}>
           <i className="is-blocked" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }} />
           <i className="is-blocked" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }} />
         </div>

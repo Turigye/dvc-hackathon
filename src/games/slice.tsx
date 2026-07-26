@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 
-type Shape = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number; spin: number; rot: number };
+type Shape = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number; spin: number; rot: number; bomb?: boolean };
 type Half = { id: string; x: number; y: number; dir: number; hue: number; size: number; born: number };
 type Point = { x: number; y: number };
 
@@ -36,7 +36,7 @@ export function Slice({ active, onFinish }: GameProps) {
       if (w.next <= 0) {
         const count = w.score > 400 ? 2 : 1;
         for (let i = 0; i < count; i++) {
-          w.shapes.push({ id: ++w.seq, x: 14 + Math.random() * 72, y: 108, vx: (Math.random() - .5) * 26, vy: -(58 + Math.random() * 16), size: 15 + Math.random() * 6, hue: Math.floor(Math.random() * 360), spin: (Math.random() - .5) * 200, rot: 0 });
+          w.shapes.push({ id: ++w.seq, x: 14 + Math.random() * 72, y: 108, vx: (Math.random() - .5) * 26, vy: -(58 + Math.random() * 16), size: 15 + Math.random() * 6, hue: Math.floor(Math.random() * 360), spin: (Math.random() - .5) * 200, rot: 0, bomb: w.score > 150 && Math.random() < 0.18 });
         }
         w.next = Math.max(.52, 1.5 - w.score / 900);
       }
@@ -70,6 +70,12 @@ export function Slice({ active, onFinish }: GameProps) {
     const w = world.current;
     const hit = w.shapes.filter((shape) => Math.hypot(shape.x - point.x, shape.y - point.y) < shape.size / 1.5);
     if (!hit.length) return;
+    // Cutting a bomb ends the run outright. Restraint mid-swipe is the skill.
+    if (hit.some((shape) => shape.bomb)) {
+      setRunning(false);
+      finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "CUT THE BOMB" });
+      return;
+    }
     const ids = new Set(hit.map((shape) => shape.id));
     w.shapes = w.shapes.filter((shape) => !ids.has(shape.id));
     w.stroke += hit.length;
@@ -101,7 +107,7 @@ export function Slice({ active, onFinish }: GameProps) {
       <div className="hud"><span>SCORE</span><strong>{score}</strong>{combo > 1 && <em className="combo">COMBO ×{combo}</em>}</div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {shapes.map((shape) => (
-        <i key={shape.id} className="slice-shape" style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, background: `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />
+        <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, background: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />
       ))}
       {halves.map((half) => (
         <i key={half.id} className="slice-half" style={{ left: `${half.x}%`, top: `${half.y}%`, width: `${half.size}%`, background: `hsl(${half.hue} 95% 62%)`, ["--dir" as string]: half.dir }} />
