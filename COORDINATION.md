@@ -27,7 +27,7 @@ Before beginning a task, both agents must:
 
 To avoid clobbering, **announce before editing a shared file** by adding a line under `## In flight
 
-_No active Codex lock. Claude retains `globals.css` and `src/components/tip-tap-arcade.tsx`._
+**Codex — per-game asset kits (2026-07-26):** `COORDINATION.md`, `TASKS.md`, `public/assets/manifest.md`, new `GAME-ASSET-PLAN.md`, and new files under `public/assets/games/`. Generate, isolate, optimize, validate, document, and hand off foreground gameplay art for all eight games. No lock on `globals.css`, `src/components/tip-tap-arcade.tsx`, or any game component; Claude retains presentation integration until a separate lock/handoff.
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.
 
@@ -42,6 +42,7 @@ Decisions here are binding. A later entry must explicitly name the decision it r
 | D-001 | 2026-07-25 | Claude owns product/design direction; Codex owns implementation, schema/auth, dependencies, testing, and Git operations. | User | Active |
 | D-002 | 2026-07-25 | `COORDINATION.md` is the single shared coordination channel; locks, decisions, handoffs, and blockers are recorded here. | User | Active |
 | D-003 | 2026-07-25 | Secrets, OAuth provider setup, Supabase project connection, and Vercel account access require user authorization and never enter Git. | User | Active |
+| D-004 | 2026-07-26 | Supersedes the presentation-only interpretation of Game component rule 4: every game receives original foreground sprites and effect assets, but simulation/collision geometry remains code-native and independent of raster bounds. | User | Active |
 
 ## Confirmed product decisions
 

@@ -338,3 +338,19 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
   color:var(--dim); font-size:.56rem; letter-spacing:.16em; }
 .rival span { color:var(--pop); font-weight:700; }
 .card.is-playing .rival { opacity:.85; }
+
+/* ---- Generated world art. Texture behind play, never a second play surface. ---- */
+.card-art { position:absolute; inset:0; z-index:0; background-size:cover; background-position:center; opacity:.5; }
+/* Switchback's art is itself a zigzag, so it has to sit much further back or
+   it reads as a second play surface. Scaled up so no full ribbon is legible. */
+.world-cobalt .card-art { opacity:.2; transform:scale(1.35); }
+.card-art + .stage-host { z-index:1; }
+
+/* ---- Result card no longer buries the action rail ---- */
+.card.has-result .rail { bottom:calc(258px + env(safe-area-inset-bottom)); }
+.card.has-result .board-strip, .card.has-result .rival, .card.has-result .swipe-cue { opacity:0; pointer-events:none; }
+.card.has-result .rail-item span { display:none; }
+.card.has-result .rail { gap:12px; }
+.result-row { display:flex; gap:8px; }
+.result-row .again { flex:1; gap:7px; }
+.result-row .again svg { width:14px; height:14px; }

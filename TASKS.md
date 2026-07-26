@@ -24,6 +24,8 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Boot screen with CSS logo — doubles as the audio gate (browsers need a gesture)
 - [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
 - [x] Pause / resume, including auto-pause when the tab hides
+- [x] World background art wired in behind every game (Codex)
+- [x] Result card no longer buries the action rail; BOARD button added to it
 - [x] Rival ghost marker — "N TO PASS NOVA" on every card
 - [x] Real chiptune music — 16-step sequencer with bass, arp, lead and drums; one original track per game, lookahead-scheduled
 - [x] Codex art wired in: eight menu tiles, submission cover, OG crop
@@ -40,7 +42,7 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | **In-game art pass, all eight** | Menu tiles and cover are DONE. Remaining: per-game backgrounds and the blockout classes listed in `CODEX-ART-PROMPTS.md`. |
+| 1 | In-game element art | Backgrounds, tiles, cover and logo family all DONE and wired in. Remaining: the blockout element classes per game in `CODEX-ART-PROMPTS.md` (hazards, runner, tiles, dial, core, bugs, shapes, rings). |
 | 2 | ~~Submission cover~~ | ✅ Delivered with OG crop and manifest entries. |
 | 3 | Anti-cheat on the score endpoint | Deprioritised by the user but still open. |
 | 4 | One real phone OAuth round-trip | Providers report enabled; no token round-trip observed yet. |

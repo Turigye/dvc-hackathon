@@ -156,9 +156,11 @@ export function TipTapArcade() {
               key={card.key}
               data-index={index}
               ref={(element) => { if (element) cards.current.set(card.key, element); else cards.current.delete(card.key); }}
-              className={`card world-${game.accent} ${playingKey === card.key ? "is-playing" : ""} ${result?.key === card.key ? "is-over" : ""}`}
+              className={`card world-${game.accent} ${playingKey === card.key ? "is-playing" : ""} ${result?.key === card.key ? "is-over has-result" : ""}`}
               aria-label={`${game.title} game`}
             >
+              <div className="card-art" aria-hidden="true" style={{ backgroundImage: `url(/assets/background-${card.slug}.webp)` }} />
+
               <div className="stage-host">
                 {card.slug === "switchback" && <Switchback active={live} onFinish={(data) => void submit("switchback", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} />}
@@ -243,7 +245,10 @@ export function TipTapArcade() {
                         <a className="again" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> OR SIGN IN</a>
                       </div>
                     )}
-                    <button type="button" className="again" onClick={() => setResult(null)}>PLAY AGAIN</button>
+                    <div className="result-row">
+                      <button type="button" className="again" onClick={() => setResult(null)}>PLAY AGAIN</button>
+                      <button type="button" className="again" onClick={() => { setResult(null); setBoardOpen(card.key); }}><Trophy weight="fill" /> BOARD</button>
+                    </div>
                   </div>
                 </div>
               )}
