@@ -24,6 +24,8 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Boot screen with CSS logo — doubles as the audio gate (browsers need a gesture)
 - [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
 - [x] Pause / resume, including auto-pause when the tab hides
+- [x] Sign-in offered on the boot screen; guests auto-assigned arcade initials
+- [x] Second differentiation pass on the derivative games — Skyline wind + rescue block, Slice chain reactions, Swarm queen, Color Rings split ball
 - [x] World background art wired in behind every game (Codex)
 - [x] Result card no longer buries the action rail; BOARD button added to it
 - [x] Rival ghost marker — "N TO PASS NOVA" on every card
@@ -35,17 +37,19 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
-| 2 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
+| 1 | First-run coach mark | One pulsing swipe hint on the very first card, gone after one swipe. |
+| 2 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
+| 3 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
 
 ## Pending — Codex
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | In-game element art | Backgrounds, tiles, cover and logo family all DONE and wired in. Remaining: the blockout element classes per game in `CODEX-ART-PROMPTS.md` (hazards, runner, tiles, dial, core, bugs, shapes, rings). |
+| 1 | **Re-do 4 backgrounds** | `CODEX-BACKGROUND-REBRIEF.md`. Switchback, Pulse, Reflex and Color Rings all painted the mechanic itself and collide with gameplay. |
+| 2 | In-game element art | Backgrounds, tiles, cover and logo family all DONE and wired in. Remaining: the blockout element classes per game in `CODEX-ART-PROMPTS.md` (hazards, runner, tiles, dial, core, bugs, shapes, rings). |
 | 2 | ~~Submission cover~~ | ✅ Delivered with OG crop and manifest entries. |
-| 3 | Anti-cheat on the score endpoint | Deprioritised by the user but still open. |
-| 4 | One real phone OAuth round-trip | Providers report enabled; no token round-trip observed yet. |
+| 4 | Anti-cheat on the score endpoint | Deprioritised by the user but still open. |
+| 5 | One real phone OAuth round-trip | Providers report enabled; no token round-trip observed yet. |
 
 ## Pending — user
 

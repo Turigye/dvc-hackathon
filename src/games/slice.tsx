@@ -21,6 +21,7 @@ export function Slice({ active, onFinish }: GameProps) {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [combo, setCombo] = useState(0);
+  const [chain, setChain] = useState(0);
   const [running, setRunning] = useState(false);
   const world = useRef({ shapes: [] as Shape[], lives: 3, score: 0, next: 0, start: 0, seq: 0, stroke: 0 });
   const { bursts, fire } = useBursts();
@@ -79,15 +80,30 @@ export function Slice({ active, onFinish }: GameProps) {
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "CUT THE BOMB" });
       return;
     }
-    const ids = new Set(hit.map((shape) => shape.id));
+    // Chain reaction: a cut shape detonates neighbours it is touching, and those
+    // detonate theirs. Placement of the swipe now matters as much as landing it.
+    const chained = new Set(hit.map((shape) => shape.id));
+    let frontier = hit;
+    while (frontier.length) {
+      const next = w.shapes.filter((shape) =>
+        !chained.has(shape.id) && !shape.bomb &&
+        frontier.some((source) => Math.hypot(source.x - shape.x, (source.y - shape.y) * 0.55) < (source.size + shape.size) * 0.62));
+      if (!next.length) break;
+      for (const shape of next) chained.add(shape.id);
+      frontier = next;
+    }
+    const chainBonus = chained.size - hit.length;
+    const ids = chained;
+    const cut = w.shapes.filter((shape) => ids.has(shape.id));
     w.shapes = w.shapes.filter((shape) => !ids.has(shape.id));
-    for (const shape of hit) fire(shape.x, shape.y, "score");
+    for (const shape of cut) fire(shape.x, shape.y, chainBonus > 0 ? "power" : "score");
     w.stroke += hit.length;
+    if (chainBonus > 0) { setChain(chainBonus); window.setTimeout(() => setChain(0), 700); }
     play(w.stroke > 2 ? "combo" : "score");
-    w.score += hit.length * 10 * Math.max(1, w.stroke);
+    w.score += (hit.length * 10 + chainBonus * 25) * Math.max(1, w.stroke);
     setScore(w.score);
     setCombo(w.stroke);
-    setHalves((current) => [...current, ...hit.flatMap((shape) => [-1, 1].map((dir) => ({ id: `${shape.id}:${dir}`, x: shape.x, y: shape.y, dir, hue: shape.hue, size: shape.size, born: Date.now() })))].slice(-12));
+    setHalves((current) => [...current, ...cut.flatMap((shape) => [-1, 1].map((dir) => ({ id: `${shape.id}:${dir}`, x: shape.x, y: shape.y, dir, hue: shape.hue, size: shape.size, born: Date.now() })))].slice(-12));
   };
 
   const track = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -109,7 +125,8 @@ export function Slice({ active, onFinish }: GameProps) {
 
   return (
     <div className="stage slice-stage" onPointerDown={begin} onPointerMove={(event) => event.currentTarget.hasPointerCapture(event.pointerId) && track(event)} onPointerUp={() => { world.current.stroke = 0; setCombo(0); setTrail([]); }}>
-      <div className="hud"><span>SCORE</span><strong key={score}>{score}</strong>{combo > 1 && <em className="combo">COMBO ×{combo}</em>}</div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{score}</strong>{combo > 1 && <em className="combo">COMBO ×{combo}</em>}
+        {chain > 0 && <em className="combo">CHAIN +{chain}</em>}</div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {shapes.map((shape) => (
         <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, background: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />

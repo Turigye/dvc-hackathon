@@ -15,7 +15,7 @@ import { Bursts, useBursts } from "@/components/burst";
  * taps everywhere else in the feed.
  */
 
-type Bug = { id: number; x: number; y: number; vx: number; vy: number; r: number; bad: boolean };
+type Bug = { id: number; x: number; y: number; vx: number; vy: number; r: number; bad: boolean; queen?: boolean; spawnIn?: number };
 
 export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
   const [bugs, setBugs] = useState<Bug[]>([]);
@@ -49,12 +49,24 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
           vy: (Math.random() - 0.5) * 12,
           r: 7.5,
           bad: w.score > 60 && Math.random() < 0.24,
+          queen: w.score > 90 && !w.bugs.some((bug) => bug.queen) && Math.random() < 0.3,
+          spawnIn: 1.1,
         });
         w.next = Math.max(0.32, 1.15 - w.score / 700);
       }
 
       const kept: Bug[] = [];
+      const hatched: Bug[] = [];
       for (const bug of w.bugs) {
+        // The queen keeps seeding the board until she is dealt with. Tapping her
+        // clears every drone she has produced.
+        if (bug.queen) {
+          bug.spawnIn = (bug.spawnIn ?? 1.1) - dt;
+          if (bug.spawnIn <= 0) {
+            bug.spawnIn = 1.5;
+            hatched.push({ id: ++w.seq, x: bug.x, y: bug.y, vx: bug.vx * 1.5, vy: (Math.random() - 0.5) * 22, r: 6.5, bad: false });
+          }
+        }
         bug.x += bug.vx * dt;
         bug.y = Math.max(10, Math.min(88, bug.y + bug.vy * dt));
         const gone = bug.x < -14 || bug.x > 114;
@@ -71,8 +83,8 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
           }
         }
       }
-      w.bugs = kept;
-      setBugs([...kept]);
+      w.bugs = [...kept, ...hatched];
+      setBugs([...w.bugs]);
       frame = requestAnimationFrame(loop);
     };
     frame = requestAnimationFrame(loop);
@@ -101,10 +113,11 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "TOUCHED THE RED" });
       return;
     }
-    w.bugs = w.bugs.filter((bug) => bug.id !== hit.id);
-    fire(hit.x, hit.y, "score");
+    const cleared = hit.queen ? w.bugs.filter((bug) => !bug.queen && !bug.bad).length : 0;
+    w.bugs = hit.queen ? w.bugs.filter((bug) => bug.bad) : w.bugs.filter((bug) => bug.id !== hit.id);
+    fire(hit.x, hit.y, hit.queen ? "power" : "score");
     play("pickup");
-    w.score += 10;
+    w.score += hit.queen ? 40 + cleared * 10 : 10;
     setScore(w.score);
     setBugs([...w.bugs]);
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(7);
@@ -115,7 +128,7 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
       <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong></div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {bugs.map((bug) => (
-        <i key={bug.id} className={`bug ${bug.bad ? "is-bad" : ""}`} style={{ left: `${bug.x}%`, top: `${bug.y}%` }} />
+        <i key={bug.id} className={`bug ${bug.bad ? "is-bad" : ""} ${bug.queen ? "is-queen" : ""}`} style={{ left: `${bug.x}%`, top: `${bug.y}%` }} />
       ))}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP THE SWARM" : "TAP TO START"}</div>

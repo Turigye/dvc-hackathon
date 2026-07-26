@@ -359,3 +359,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
   border:1.5px solid rgb(255 255 255 / .34); border-radius:999px; color:#FFF6E6; font-size:.62rem; letter-spacing:.1em; text-decoration:none; }
 .boot-signin svg { width:16px; height:16px; }
 .saved { cursor:pointer; }
+
+.rings-twin { position:absolute; left:calc(50% + 26px); width:22px; height:22px; border-radius:50%; transform:translate(-50%, -50%); animation:pop 260ms ease-out; }
+
+.bug.is-queen { width:52px; height:52px; background:var(--pop2); box-shadow:0 0 26px var(--pop2); border:3px solid #fff; }

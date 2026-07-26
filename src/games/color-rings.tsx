@@ -17,10 +17,11 @@ const GAP = 26;
 export function ColorRings({ active, onFinish }: GameProps) {
   const [gates, setGates] = useState<Gate[]>([]);
   const [ball, setBall] = useState(0);
+  const [twin, setTwin] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [running, setRunning] = useState(false);
   const [pulse, setPulse] = useState(0);
-  const world = useRef({ gates: [] as Gate[], ball: 0, score: 0, speed: 20, seq: 0, start: 0 });
+  const world = useRef({ gates: [] as Gate[], ball: 0, twin: null as number | null, score: 0, speed: 20, seq: 0, start: 0 });
   const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
@@ -38,7 +39,10 @@ export function ColorRings({ active, onFinish }: GameProps) {
       if (passed) {
         passed.cleared = true;
         const segment = Math.floor((((270 - passed.angle) % 360) + 360) % 360 / 90);
-        if (segment !== w.ball) {
+        // Past 60 the ball splits: the segment must satisfy BOTH colours, so a
+        // single ring can no longer be solved by one glance.
+        const needsTwin = w.twin !== null;
+        if (segment !== w.ball && (!needsTwin || segment !== w.twin)) {
           setRunning(false);
           finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: w.score >= 200 ? "SPECTRUM" : "WRONG COLOUR" });
           return;
@@ -47,6 +51,8 @@ export function ColorRings({ active, onFinish }: GameProps) {
         play("score");
         w.score += 10;
         w.ball = Math.floor(Math.random() * 4);
+        w.twin = w.score >= 60 ? Math.floor(Math.random() * 4) : null;
+        setTwin(w.twin);
         w.speed = Math.min(52, w.speed + 1.4);
         setScore(w.score);
         setBall(w.ball);
@@ -68,8 +74,8 @@ export function ColorRings({ active, onFinish }: GameProps) {
     if (!active) return;
     const w = world.current;
     if (!running) {
-      world.current = { gates: [{ id: 1, y: 128, angle: 0, cleared: false }], ball: 0, score: 0, speed: 20, seq: 1, start: Date.now() };
-      setGates([...world.current.gates]); setBall(0); setScore(0); setRunning(true);
+      world.current = { gates: [{ id: 1, y: 128, angle: 0, cleared: false }], ball: 0, twin: null, score: 0, speed: 20, seq: 1, start: Date.now() };
+      setGates([...world.current.gates]); setBall(0); setTwin(null); setScore(0); setRunning(true);
       return;
     }
     const next = w.gates.find((gate) => !gate.cleared);
@@ -84,6 +90,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
         <i key={gate.id} className={`ring ${gate.cleared ? "is-cleared" : ""}`} style={{ top: `${gate.y}%`, transform: `translate(-50%, -50%) rotate(${gate.angle}deg)`, background: `conic-gradient(${COLORS[0]} 0deg 90deg, ${COLORS[1]} 90deg 180deg, ${COLORS[2]} 180deg 270deg, ${COLORS[3]} 270deg 360deg)` }} />
       ))}
       <i key={pulse} className="rings-ball" style={{ top: `${BALL_Y}%`, background: COLORS[ball], boxShadow: `0 0 26px ${COLORS[ball]}` }} />
+      {twin !== null && <i className="rings-twin" style={{ top: `${BALL_Y}%`, background: COLORS[twin], boxShadow: `0 0 18px ${COLORS[twin]}` }} />}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "SPIN TO MATCH" : "TAP TO START"}</div>
     </button>

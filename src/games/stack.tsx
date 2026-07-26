@@ -23,9 +23,11 @@ export function Stack({ active, onFinish }: GameProps) {
   const [perfect, setPerfect] = useState(0);
   const [moverHue, setMoverHue] = useState(331);
   const [sway, setSway] = useState(0);
+  const [wind, setWind] = useState(0);
+  const [rescue, setRescue] = useState(false);
   const mover = useRef<HTMLDivElement | null>(null);
   const list = useRef<Block[]>([]);
-  const st = useRef({ x: 0, dir: 1, w: BASE_W, speed: 38, start: 0, hue: 318 });
+  const st = useRef({ x: 0, dir: 1, w: BASE_W, speed: 38, start: 0, hue: 318, wind: 0, misses: 0 });
   const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
@@ -38,7 +40,11 @@ export function Stack({ active, onFinish }: GameProps) {
       const dt = Math.min(64, now - prev) / 1000;
       prev = now;
       const s = st.current;
-      s.x += s.dir * s.speed * dt;
+      // Wind: above eight blocks a slow crosswind pushes the moving piece, so the
+      // player is reading a drifting target instead of a metronome.
+      const storey = list.current.length;
+      if (storey > 8) { s.wind = Math.sin(now / 2100) * Math.min(16, (storey - 8) * 1.4); setWind(s.wind); }
+      s.x += (s.dir * s.speed + s.wind) * dt;
       const max = W - s.w;
       if (s.x <= 0) { s.x = 0; s.dir = 1; }
       if (s.x >= max) { s.x = max; s.dir = -1; }
@@ -58,10 +64,12 @@ export function Stack({ active, onFinish }: GameProps) {
     if (!active) return;
     const s = st.current;
     if (!running) {
-      st.current = { x: 0, dir: 1, w: BASE_W, speed: 38, start: Date.now(), hue: 318 };
+      st.current = { x: 0, dir: 1, w: BASE_W, speed: 38, start: Date.now(), hue: 318, wind: 0, misses: 0 };
       list.current = [{ x: (W - BASE_W) / 2, w: BASE_W, hue: 318 }];
       setBlocks(list.current);
       setShards([]);
+      setWind(0);
+      setRescue(false);
       setPerfect(0);
       setSway(0);
       setMoverHue(331);
@@ -80,6 +88,10 @@ export function Stack({ active, onFinish }: GameProps) {
       return;
     }
     const trimmed = s.w - overlap;
+    // Rescue block: three sloppy drops in a row and the next piece comes back
+    // wide. Comeback potential without making a clean run any easier.
+    if (trimmed > 0.8) { s.misses += 1; } else { s.misses = 0; }
+    if (s.misses >= 3) { s.misses = 0; setRescue(true); window.setTimeout(() => setRescue(false), 900); }
     if (trimmed > 0.8) {
       setShards((current) => [...current, { id: Date.now(), x: s.x < left ? s.x : right, w: trimmed, hue: s.hue, dir: s.x < left ? -1 : 1 }].slice(-3));
       setPerfect(0);
@@ -88,7 +100,7 @@ export function Stack({ active, onFinish }: GameProps) {
       play("combo");
       setPerfect((value) => value + 1);
     }
-    s.w = overlap;
+    s.w = s.misses === 0 && rescue ? Math.min(BASE_W, overlap + 12) : overlap;
     s.x = left;
     s.hue = (s.hue + 13) % 360;
     setMoverHue((s.hue + 13) % 360);
@@ -102,7 +114,8 @@ export function Stack({ active, onFinish }: GameProps) {
 
   return (
     <button type="button" className="stage stack-stage" onPointerDown={drop} aria-label={running ? "Tap to drop the block" : "Tap to start Stack"}>
-      <div className="hud"><span>HEIGHT</span><strong key={score}>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}</div>
+      <div className="hud"><span>{Math.abs(wind) > 6 ? "WINDY" : "HEIGHT"}</span><strong key={score}>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}
+        {rescue && <em className="combo">RESCUE BLOCK</em>}</div>
       <div className="stack-well" style={{ transform: `rotate(${sway.toFixed(2)}deg)`, transformOrigin: "50% 100%" }}>
         {shards.map((shard) => (
           <i key={shard.id} className="stack-shard" style={{ left: `${shard.x}%`, width: `${shard.w}%`, bottom: `${(blocks.length - 1) * ROW - offset}px`, background: `hsl(${shard.hue} 92% 62%)`, ["--dir" as string]: shard.dir }} />
