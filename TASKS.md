@@ -32,21 +32,24 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Real chiptune music — 16-step sequencer with bass, arp, lead and drums; one original track per game, lookahead-scheduled
 - [x] Codex art wired in: eight menu tiles, submission cover, OG crop
 - [x] Fixed `.world-magenta` — Skyline had no colour world after the accent rename
+- [x] Four rejected mechanic-copying backgrounds replaced with quiet-centre environmental art — Switchback, Pulse, Reflex, Color Rings
+- [x] Eight foreground gameplay kits generated and alpha-validated — 72 named sprites across all games
 
 ## Pending — Claude
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | First-run coach mark | One pulsing swipe hint on the very first card, gone after one swipe. |
-| 2 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
-| 3 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
+| 1 | Integrate foreground sprite kits | One game at a time, Switchback first. Keep CSS/SVG geometry as fallback and hitbox authority; lazy-load nonessential art. |
+| 2 | First-run coach mark | One pulsing swipe hint on the very first card, gone after one swipe. |
+| 3 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
+| 4 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
 
 ## Pending — Codex
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | **Re-do 4 backgrounds** | `CODEX-BACKGROUND-REBRIEF.md`. Switchback, Pulse, Reflex and Color Rings all painted the mechanic itself and collide with gameplay. |
-| 2 | In-game element art | Backgrounds, tiles, cover and logo family all DONE and wired in. Remaining: the blockout element classes per game in `CODEX-ART-PROMPTS.md` (hazards, runner, tiles, dial, core, bugs, shapes, rings). |
+| 1 | Sprite integration QA | Foreground generation is complete. Review each Claude-integrated kit at 390×844 for legibility, failed-asset fallback, geometry independence and memory cost. |
+| 2 | Background live-card QA | Four corrected files are delivered; verify after Claude's next production deployment at the wired `.card-art` opacity. |
 | 2 | ~~Submission cover~~ | ✅ Delivered with OG crop and manifest entries. |
 | 4 | Anti-cheat on the score endpoint | Deprioritised by the user but still open. |
 | 5 | One real phone OAuth round-trip | Providers report enabled; no token round-trip observed yet. |

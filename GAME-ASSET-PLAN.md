@@ -11,6 +11,12 @@ This file maps generated art to the live product and prevents decorative imagery
 
 The cover, logo, icon and OG crops are campaign/identity assets, not part of this 16-image gameplay set.
 
+### Review status
+
+- All eight menu tiles are accepted and already wired into the menu.
+- Skyline, Overload, Swarm and Slice backgrounds were accepted on the first pass.
+- Switchback, Pulse, Reflex and Color Rings backgrounds were rejected because they repeated the live mechanic. They were replaced with quieter environmental fields that keep detail at the edges and leave the play zone empty.
+
 ## Foreground kit contract
 
 Each game gets an original transparent sprite atlas plus individually exported sprites. Every kit uses the existing kinetic-poster language—flat screen-print shapes, thick cream keylines, saturated game-specific colour, compact halftone texture, strong silhouettes—and avoids stock art, recognizable third-party characters, tiny text, or baked UI.
