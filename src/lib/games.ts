@@ -14,7 +14,7 @@ export type GameDefinition = {
 export const games: GameDefinition[] = [
   { slug: "switchback", title: "Switchback", kicker: "Tap to flip.", accent: "cobalt", description: "Zigzag runner", scoreCap: 4_000 },
   { slug: "skyline", title: "Skyline", kicker: "Tap to stack.", accent: "magenta", description: "Precision tower", scoreCap: 4_000 },
-  { slug: "pulse", title: "Pulse", kicker: "Tap to rise.", accent: "electric", description: "Gate flight", scoreCap: 6_000 },
+  { slug: "pulse", title: "Pulse Weave", kicker: "Tap to swap.", accent: "electric", description: "Twin-signal phase run", scoreCap: 6_000 },
   { slug: "reflex", title: "Reflex", kicker: "Tap on the arc.", accent: "ember", description: "Timing dial", scoreCap: 6_000 },
   { slug: "overload", title: "Overload", kicker: "Hold, then release.", accent: "toxic", description: "Charge control", scoreCap: 6_000 },
   { slug: "swarm", title: "Swarm", kicker: "Tap the swarm.", accent: "violet", description: "Target hunt", scoreCap: 6_000 },
