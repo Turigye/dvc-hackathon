@@ -55,6 +55,7 @@ export function TipTapArcade() {
   const [mute, setMute] = useState(true);
   const [initials, setInitials] = useState<string | null>(null);
   const [draft, setDraft] = useState("AAA");
+  const [boardOpen, setBoardOpen] = useState<string | null>(null);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
@@ -144,20 +145,39 @@ export function TipTapArcade() {
                 </div>
 
                 <aside className="rail">
-                  <div className="rail-item"><Trophy weight="fill" /><b>{board.playerBest || "—"}</b><span>BEST</span></div>
-                  <div className="rail-item"><Ranking weight="fill" /><b>{board.playerRank ? `#${board.playerRank}` : "—"}</b><span>RANK</span></div>
+                  <button type="button" className="rail-item is-button" onClick={() => setBoardOpen(card.key)} aria-label={`${game.title} leaderboard`}><Trophy weight="fill" /><b>{board.playerBest || "—"}</b><span>BEST</span></button>
+                  <button type="button" className="rail-item is-button" onClick={() => setBoardOpen(card.key)} aria-label={`Your rank in ${game.title}`}><Ranking weight="fill" /><b>{board.playerRank ? `#${board.playerRank}` : "—"}</b><span>RANK</span></button>
                   <button type="button" className="rail-item is-button" onClick={() => void share(card.slug)}><ShareNetwork weight="fill" /><span>SHARE</span></button>
                 </aside>
 
-                <div className="board-strip">
+                <button type="button" className="board-strip" onClick={() => setBoardOpen(card.key)} aria-label={`Open the ${game.title} leaderboard`}>
                   {board.entries.slice(0, 3).map((entry) => (
                     <span key={`${entry.rank}-${entry.player}`} className={entry.isYou ? "is-you" : ""}>{entry.rank}. {entry.player} <b>{entry.score}</b></span>
                   ))}
                   {!board.entries.length && <span>BE THE FIRST ON THE BOARD</span>}
-                </div>
+                </button>
 
                 <div className="swipe-cue"><ArrowDown weight="bold" /> SWIPE FOR NEXT</div>
               </div>
+
+              {boardOpen === card.key && (
+                <div className="board-sheet" role="dialog" aria-label={`${game.title} leaderboard`}>
+                  <div className="sheet-head">
+                    <h3>{game.title}</h3>
+                    <button type="button" className="sheet-close" onClick={() => setBoardOpen(null)} aria-label="Close leaderboard">CLOSE</button>
+                  </div>
+                  <ol className="sheet-rows">
+                    {board.entries.length ? board.entries.map((entry) => (
+                      <li key={`${entry.rank}-${entry.player}`} className={entry.isYou ? "is-you" : ""}>
+                        <span className="rank">{String(entry.rank).padStart(2, "0")}</span>
+                        <span className="who">{entry.player}</span>
+                        <span className="pts">{entry.score}</span>
+                      </li>
+                    )) : <li className="empty">NOBODY HAS PLAYED THIS YET</li>}
+                  </ol>
+                  {board.playerRank && <p className="sheet-foot">YOU ARE #{board.playerRank} — TOP {100 - board.percentile + 1}%</p>}
+                </div>
+              )}
 
               {result?.key === card.key && (
                 <div className="result" role="status">
