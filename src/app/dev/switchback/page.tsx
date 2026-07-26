@@ -1,4 +1,4 @@
-import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "@/games/switchback/geometry";
+import { RAIL_OFFSET, railPath, railPoint, ribbonPath } from "@/games/switchback/geometry";
 import {
   LOOKAHEAD,
   createSwitchbackState,
@@ -51,17 +51,21 @@ function Frame({ state, label }: { state: SwitchbackState; label: string }) {
       <svg viewBox={`0 ${cameraY} 100 ${VIEW_H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={label}>
         <polyline className="ribbon-wall" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} transform="translate(0 5)" />
         <polyline className="ribbon" points={ribbonPath(first, last)} strokeWidth={RAIL_OFFSET * 2} />
-        <polyline className="centre-stripes" points={ribbonPath(first, last)} />
         <polyline className="rail-line" points={railPath(first, last, 0)} />
         <polyline className="rail-line" points={railPath(first, last, 1)} />
-        {Array.from({ length: last - first + 1 }, (_, index) => first + index).map((seg) => {
-          const { x, y } = centre(seg, 0);
-          return <circle key={seg} className="vertex" cx={x} cy={y} r={3} />;
-        })}
         {state.drags.map((drag) => {
           const start = railPoint(drag.segment, drag.from, drag.rail);
           const end = railPoint(drag.segment, drag.to, drag.rail);
-          return <line key={`d${drag.id}`} className={`drag-band is-${drag.kind}`} x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
+          const x = (start.x + end.x) / 2;
+          const y = (start.y + end.y) / 2;
+          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+          return (
+            <g key={`d${drag.id}`} className={`band-mark is-${drag.kind}`} transform={`translate(${x} ${y}) rotate(${angle})`}>
+              {drag.kind === "sprint"
+                ? <path d="M-9 -6 L-2 0 L-9 6 M-1 -6 L6 0 L-1 6 M8 -6 L15 0 L8 6" />
+                : <path d="M-13 -7 L-8 7 M-7 -7 L-2 7 M-1 -7 L4 7 M5 -7 L10 7 M11 -7 L16 7" />}
+            </g>
+          );
         })}
 
         {state.hazards.map((hazard) => {

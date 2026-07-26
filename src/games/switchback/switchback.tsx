@@ -6,7 +6,7 @@ import type { GameProps } from "../types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
-import { RAIL_OFFSET, railPath, railPoint, ribbonPath } from "./geometry";
+import { RAIL_OFFSET, railPath, railPoint, ribbonPath, runnerPose, type RunnerJump } from "./geometry";
 
 type SvgArtProps = {
   active: boolean;
@@ -17,10 +17,11 @@ type SvgArtProps = {
   size: number;
   fallback: ReactNode;
   groupClassName?: string;
+  imageTransform?: string;
 };
 
 /** Presentation-only SVG image. Its bounds never participate in simulation. */
-function SvgArt({ active, className, src, x, y, size, fallback, groupClassName }: SvgArtProps) {
+function SvgArt({ active, className, src, x, y, size, fallback, groupClassName, imageTransform }: SvgArtProps) {
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const ready = active && loadedSrc === src && failedSrc !== src;
@@ -36,6 +37,7 @@ function SvgArt({ active, className, src, x, y, size, fallback, groupClassName }
           width={size}
           height={size}
           preserveAspectRatio="xMidYMid meet"
+          transform={imageTransform}
           onLoad={() => setLoadedSrc(src)}
           onError={() => setFailedSrc(src)}
         />
@@ -50,13 +52,14 @@ const RUNNER_SCREEN_Y = 0.55;
 const VIEW_H = 212;
 
 /**
- * Blockout renderer. Flat shapes only — the art pass replaces this layer.
- * All gameplay lives in `simulation.ts`; this file only draws state and
- * forwards taps.
+ * Poster renderer. All gameplay lives in `simulation.ts`; this file only draws
+ * presentation state and forwards taps.
  */
 export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const [state, setState] = useState<SwitchbackState>(() => createSwitchbackState({ seed: 1, spawnEnabled: false }));
   const [running, setRunning] = useState(false);
+  const [jump, setJump] = useState<RunnerJump | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const world = useRef(state);
   const flip = useRef(false);
   const started = useRef(0);
@@ -64,6 +67,13 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     if (!running || !active) return;
@@ -72,7 +82,12 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
     const loop = (now: number) => {
       const dt = Math.min(64, now - previous);
       previous = now;
-      const next = step(world.current, dt, { flip: flip.current });
+      const previousState = world.current;
+      const requestedFlip = flip.current;
+      const next = step(previousState, dt, { flip: requestedFlip });
+      if (requestedFlip && next.rail !== previousState.rail) {
+        setJump({ fromRail: previousState.rail, toRail: next.rail, startProgress: next.progress });
+      }
       flip.current = false;
       world.current = next;
       setState(next);
@@ -102,6 +117,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
     if (!running) {
       const fresh = createSwitchbackState({ seed: (Date.now() % 100000) + 1 });
       world.current = fresh;
+      setJump(null);
       started.current = Date.now();
       setState(fresh);
       setRunning(true);
@@ -115,6 +131,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const segment = segmentOf(state.progress);
   const offset = offsetOf(state.progress);
   const runner = railPoint(segment, offset, state.rail);
+  const pose = runnerPose(state.progress, state.rail, reducedMotion ? null : jump);
   // Scroll the world so the runner stays at a fixed height on screen.
   const cameraY = runner.y - VIEW_H * RUNNER_SCREEN_Y;
   // Draw behind the runner too, so the ribbon reads as continuous rather than
@@ -123,7 +140,19 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const last = segment + LOOKAHEAD;
 
   return (
-    <button type="button" className="stage switchback-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}>
+    <button
+      type="button"
+      className="stage switchback-stage"
+      data-running={running ? "true" : "false"}
+      onPointerDown={tap}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          tap();
+        }
+      }}
+      aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}
+    >
       <div className="hud">
         <span>SCORE</span>
         <strong key={state.score}>{String(state.score).padStart(3, "0")}</strong>
@@ -144,7 +173,18 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         {state.drags.map((drag) => {
           const start = railPoint(drag.segment, drag.from, drag.rail);
           const end = railPoint(drag.segment, drag.to, drag.rail);
-          return <line key={`d${drag.id}`} className={`drag-band is-${drag.kind}`} x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={11} strokeLinecap="butt" />;
+          const x = (start.x + end.x) / 2;
+          const y = (start.y + end.y) / 2;
+          const angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI;
+          return (
+            <g key={`d${drag.id}`} className={`band-mark is-${drag.kind}`} transform={`translate(${x} ${y}) rotate(${angle})`}>
+              {drag.kind === "sprint" ? (
+                <path d="M-9 -6 L-2 0 L-9 6 M-1 -6 L6 0 L-1 6 M8 -6 L15 0 L8 6" />
+              ) : (
+                <path d="M-13 -7 L-8 7 M-7 -7 L-2 7 M-1 -7 L4 7 M5 -7 L10 7 M11 -7 L16 7" />
+              )}
+            </g>
+          );
         })}
 
         {state.hazards.map((hazard) => {
@@ -189,7 +229,16 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           );
         })()}
 
-        <SvgArt active={active} className="is-runner" src="/assets/games/switchback/sprite-runner-v2.png" x={runner.x} y={runner.y} size={18} fallback={<circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />} />
+        <SvgArt
+          active={active}
+          className={`is-runner ${pose.jumping ? "is-jumping" : ""}`}
+          src="/assets/games/switchback/sprite-runner-v2.png"
+          x={pose.x}
+          y={pose.y}
+          size={18}
+          imageTransform={`translate(${pose.x} ${pose.y}) rotate(${pose.lean}) scale(${pose.facing} 1) translate(${-pose.x} ${-pose.y})`}
+          fallback={<circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />}
+        />
       </svg>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO FLIP" : "TAP TO START"}</div>

@@ -110,12 +110,13 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 @media (min-width:768px) { .feed, .topbar { max-width:430px; margin-inline:auto; } .topbar { right:0; left:0; } }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; } }
 
-/* ---- SWITCHBACK blockout. Flat shapes only; the art pass replaces this. ---- */
+/* ---- SWITCHBACK kinetic-poster world ---- */
 .switchback-stage { touch-action:pan-y; }
 .switchback-view { position:absolute; inset:0; width:100%; height:100%; }
 .ribbon { fill:none; stroke:#173BA8; stroke-opacity:.72; stroke-linejoin:round; stroke-linecap:round; }
-.drag-band.is-drag { stroke:#7A4A12; stroke-opacity:.9; }
-.drag-band.is-sprint { stroke:#00E5FF; stroke-opacity:.75; }
+.band-mark { fill:none; stroke-width:2.4; stroke-linecap:square; stroke-linejoin:miter; pointer-events:none; }
+.band-mark.is-drag { stroke:#F5A623; opacity:.82; }
+.band-mark.is-sprint { stroke:#20C4E8; filter:drop-shadow(0 0 2px rgb(32 196 232 / .55)); }
 .ribbon-wall { fill:none; stroke:#071737; stroke-opacity:.86; stroke-linejoin:round; stroke-linecap:round; }
 .rail-line { fill:none; stroke:#EDE7DC; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round; }
 .hazard line { stroke:#E8391B; }
@@ -135,6 +136,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .runner.has-shield { stroke:#F5A623; stroke-width:3; }
 .switchback-art { pointer-events:none; filter:drop-shadow(0 2px 1px rgb(0 0 0 / .3)); }
 .switchback-art.is-runner { filter:drop-shadow(0 3px 2px rgb(0 0 0 / .34)); }
+.switchback-art.is-runner.is-jumping { filter:drop-shadow(0 5px 3px rgb(0 0 0 / .26)); }
 
 /* ---- Design QA filmstrip (dev route only) ---- */
 .qa { padding:24px; color:#EDE7DC; background:#0B0F1A; min-height:100dvh; }
@@ -172,14 +174,6 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .world-cobalt .board-strip b { color:#F5A623; }
 .world-cobalt .prompt { border:2px solid #EDE7DC; border-radius:3px; width:max-content; margin:0 auto; padding:7px 16px; background:rgb(11 15 26 / .84); color:#EDE7DC; font-weight:700; box-shadow:4px 4px 0 #E8391B; }
 .stage[data-running="true"] .prompt { opacity:0; }
-
-/* ---- Minimal in-game key: name the shapes without a tutorial ---- */
-.key { position:absolute; right:14px; top:calc(72px + env(safe-area-inset-top)); z-index:3; display:grid; gap:5px; margin:0; padding:8px 10px; list-style:none;
-  border:1.5px solid rgb(237 231 220 / .22); border-radius:4px; background:rgb(11 15 26 / .72); font-size:.5rem; letter-spacing:.14em; color:#EDE7DC; pointer-events:none; }
-.key li { display:flex; align-items:center; gap:6px; }
-.key i { width:9px; height:9px; border-radius:2px; flex:0 0 auto; }
-.k-hazard { background:#E8391B; } .k-coin { background:#F5A623; border-radius:50%; }
-.k-drag { background:#7A4A12; } .k-sprint { background:#00E5FF; } .k-chaser { background:#E8391B; border-radius:50%; border:1.5px solid #EDE7DC; }
 
 /* ---- PULSE (blockout) ---- */
 .pulse-stage { touch-action:pan-y; }
@@ -386,7 +380,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 
 .rings-twin { position:absolute; left:calc(50% + 26px); width:22px; height:22px; border-radius:50%; background-color:var(--tint); transform:translate(-50%, -50%); animation:pop 260ms ease-out; }
 
-.bug.is-queen { width:52px; height:52px; background-color:var(--pop2); box-shadow:0 0 26px var(--pop2); border:3px solid #fff; }
+.bug.is-queen { background-color:var(--pop2); box-shadow:0 0 26px var(--pop2); border:3px solid #fff; }
 
 /* ---- Sprite layer. Decoration only — the shapes underneath stay authoritative
        and remain visible if an image fails to load. ---- */

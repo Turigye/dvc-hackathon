@@ -15,6 +15,40 @@ export const RAIL_OFFSET = 10;
 
 export const vertexX = (segment: number) => (segment % 2 === 0 ? SWING_LEFT : SWING_RIGHT);
 
+export type RunnerJump = {
+  fromRail: 0 | 1;
+  toRail: 0 | 1;
+  startProgress: number;
+};
+
+/** Presentation-only pose for a tap-driven rail transfer. Collision remains
+ * instantaneous in the simulation; the sprite eases across it over 0.16 of a
+ * segment and lifts slightly so the action reads as a jump instead of a snap. */
+export function runnerPose(progress: number, rail: 0 | 1, jump: RunnerJump | null) {
+  const segment = Math.floor(progress);
+  const offset = progress - segment;
+  const destination = railPoint(segment, offset, rail);
+  const rawPhase = jump ? (progress - jump.startProgress) / 0.16 : 1;
+  const phase = Math.max(0, Math.min(1, rawPhase));
+
+  if (!jump || phase >= 0.999) {
+    return { ...destination, facing: segment % 2 === 0 ? 1 : -1, lean: 0, jumping: false, phase: 1 };
+  }
+
+  const from = railPoint(segment, offset, jump.fromRail);
+  const to = railPoint(segment, offset, jump.toRail);
+  const eased = phase * phase * (3 - 2 * phase);
+  const direction = to.x >= from.x ? 1 : -1;
+  return {
+    x: from.x + (to.x - from.x) * eased,
+    y: from.y + (to.y - from.y) * eased - Math.sin(Math.PI * eased) * 4.2,
+    facing: direction,
+    lean: direction * -12 * Math.sin(Math.PI * eased),
+    jumping: true,
+    phase,
+  };
+}
+
 /** Centre line of the ribbon at (segment, offset). */
 export function centre(segment: number, offset: number) {
   const from = vertexX(segment);

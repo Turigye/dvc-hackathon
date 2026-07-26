@@ -29,7 +29,7 @@ To avoid clobbering, **announce before editing a shared file** by adding a line 
 
 ## In flight
 
-_No active Codex lock. Kinetic-poster correction files released after the 2026-07-26 15:12 EAT handoff._
+**Codex lock — Switchback movement/cleanup pass:** `src/games/switchback/{switchback.tsx,geometry.ts,geometry.test.ts}`, `src/app/dev/switchback/page.tsx`, `src/app/globals.css`, QA evidence, and `COORDINATION.md`. Intent: give rail flips a readable mirrored jump/lean/settle presentation, eliminate the remaining blockout-style drag/sprint rectangles without changing simulation geometry, and run the eight-skill regression matrix. Release condition: deterministic gates, real-pointer multi-viewport play, lifecycle/performance/fallback checks, production smoke, and handoff row.
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.
 
