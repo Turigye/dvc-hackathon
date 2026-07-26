@@ -354,3 +354,8 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .result-row { display:flex; gap:8px; }
 .result-row .again { flex:1; gap:7px; }
 .result-row .again svg { width:14px; height:14px; }
+
+.boot-signin { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:46px; margin-top:12px;
+  border:1.5px solid rgb(255 255 255 / .34); border-radius:999px; color:#FFF6E6; font-size:.62rem; letter-spacing:.1em; text-decoration:none; }
+.boot-signin svg { width:16px; height:16px; }
+.saved { cursor:pointer; }

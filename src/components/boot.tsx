@@ -1,6 +1,6 @@
 "use client";
 
-import { GameController, Play, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
+import { GameController, GoogleLogo, Play, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import Image from "next/image";
 import { games } from "@/lib/games";
 
@@ -13,11 +13,17 @@ export function Boot({
   onMenu,
   muted,
   onToggleSound,
+  signedIn,
+  playerName,
+  signInHref,
 }: {
   onStart: () => void;
   onMenu: () => void;
   muted: boolean;
   onToggleSound: () => void;
+  signedIn: boolean;
+  playerName?: string;
+  signInHref: string;
 }) {
   return (
     <div className="boot" role="dialog" aria-label="Thumbtrance">
@@ -40,7 +46,14 @@ export function Boot({
             {muted ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />} SOUND {muted ? "OFF" : "ON"}
           </button>
         </div>
-        <p className="boot-hint">Sound is worth it.</p>
+        {signedIn ? (
+          <p className="boot-hint">SIGNED IN AS {playerName} · SCORES SAVE AUTOMATICALLY</p>
+        ) : (
+          <a className="boot-signin" href={signInHref}>
+            <GoogleLogo weight="fill" /> SIGN IN TO KEEP YOUR SCORES
+          </a>
+        )}
+        <p className="boot-hint">You can play without an account. Sound is worth it.</p>
       </div>
     </div>
   );

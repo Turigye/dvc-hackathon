@@ -56,6 +56,15 @@ export function TipTapArcade() {
   const [mute, setMute] = useState(true);
   const [initials, setInitials] = useState<string | null>(null);
   const [draft, setDraft] = useState("AAA");
+  // Every guest gets initials up front. A board full of "PLAYER" looks dead.
+  useEffect(() => {
+    const stored = localStorage.getItem("thumbtrance-initials");
+    if (stored) { setInitials(stored); setDraft(stored); return; }
+    const letters = Array.from({ length: 3 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join("");
+    localStorage.setItem("thumbtrance-initials", letters);
+    setInitials(letters);
+    setDraft(letters);
+  }, []);
   const [boardOpen, setBoardOpen] = useState<string | null>(null);
   const [booted, setBooted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -110,8 +119,13 @@ export function TipTapArcade() {
     window.setTimeout(() => setResult({ key, data }), 150);
     if (!deviceId) return;
     await fetch("/api/scores", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game, score: data.score, durationMs: data.durationMs, roundId: createClientId(), deviceId }) });
+    // The player row only exists once a score lands, so claim the initials now.
+    const claimed = localStorage.getItem("thumbtrance-initials");
+    if (claimed && !account.signedIn) {
+      await fetch("/api/initials", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ deviceId, initials: claimed }) });
+    }
     await loadBoard(game);
-  }, [deviceId, loadBoard]);
+  }, [deviceId, loadBoard, account.signedIn]);
 
   const jumpTo = (slug: string) => {
     const index = deck.findIndex((card) => card.slug === slug);
@@ -227,10 +241,10 @@ export function TipTapArcade() {
                     {account.signedIn ? (
                       <span className="saved">SAVED AS {account.name}</span>
                     ) : initials ? (
-                      <span className="saved">ON THE BOARD AS {initials}</span>
+                      <button type="button" className="saved" onClick={() => setInitials(null)}>ON THE BOARD AS {initials} — CHANGE</button>
                     ) : (
                       <div className="initials">
-                        <span className="initials-label">ENTER YOUR INITIALS</span>
+                        <span className="initials-label">TAP A LETTER TO CHANGE IT</span>
                         <div className="initials-slots">
                           {[0, 1, 2].map((slot) => (
                             <button key={slot} type="button" className="slot" aria-label={`Letter ${slot + 1}: ${draft[slot]}`}
@@ -241,7 +255,7 @@ export function TipTapArcade() {
                               })}>{draft[slot]}</button>
                           ))}
                         </div>
-                        <button type="button" className="save" onClick={() => { setInitials(draft); void fetch("/api/initials", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ deviceId, initials: draft }) }); }}>CLAIM IT</button>
+                        <button type="button" className="save" onClick={() => { setInitials(draft); localStorage.setItem("thumbtrance-initials", draft); void fetch("/api/initials", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ deviceId, initials: draft }) }); }}>CLAIM IT</button>
                         <a className="again" href={`/auth/login?device=${deviceId}`}><GoogleLogo weight="fill" /> OR SIGN IN</a>
                       </div>
                     )}
@@ -262,6 +276,9 @@ export function TipTapArcade() {
           onStart={() => { setBooted(true); if (mute) setMute(setMuted(false)); }}
           onMenu={() => { if (mute) setMute(setMuted(false)); setMenuOpen(true); }}
           onToggleSound={() => setMute(setMuted(!isMuted()))}
+          signedIn={account.signedIn}
+          playerName={account.name}
+          signInHref={`/auth/login?device=${deviceId}`}
         />
       )}
 
