@@ -111,7 +111,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
           <i className="is-blocked" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }} />
         </div>
       ))}
-      <i className="pulse-bird" style={{ top: `${y}%`, background: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />
+      <i className="pulse-bird" style={{ top: `${y}%`, ["--tint" as string]: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO RISE" : "TAP TO START"}</div>
     </button>

@@ -74,6 +74,9 @@ export function TipTapArcade() {
 
   useEffect(() => { setDeviceId(getDeviceId()); setMute(loadMutePreference()); }, []);
   useEffect(() => {
+    // ?nopause=1 keeps the feed running while hidden so automated visual QA can
+    // screenshot live gameplay. Never set in normal use.
+    if (new URLSearchParams(location.search).has("nopause")) return;
     const onVisibility = () => { if (document.hidden) { setPaused(true); stopMusic(); } };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);

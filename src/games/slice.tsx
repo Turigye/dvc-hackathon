@@ -129,10 +129,10 @@ export function Slice({ active, onFinish }: GameProps) {
         {chain > 0 && <em className="combo">CHAIN +{chain}</em>}</div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {shapes.map((shape) => (
-        <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, background: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />
+        <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, ["--tint" as string]: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />
       ))}
       {halves.map((half) => (
-        <i key={half.id} className="slice-half" style={{ left: `${half.x}%`, top: `${half.y}%`, width: `${half.size}%`, background: `hsl(${half.hue} 95% 62%)`, ["--dir" as string]: half.dir }} />
+        <i key={half.id} className="slice-half" style={{ left: `${half.x}%`, top: `${half.y}%`, width: `${half.size}%`, ["--tint" as string]: `hsl(${half.hue} 95% 62%)`, ["--dir" as string]: half.dir }} />
       ))}
       {trail.length > 1 && (
         <svg className="slice-trail" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

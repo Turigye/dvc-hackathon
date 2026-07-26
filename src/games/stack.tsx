@@ -118,12 +118,12 @@ export function Stack({ active, onFinish }: GameProps) {
         {rescue && <em className="combo">RESCUE BLOCK</em>}</div>
       <div className="stack-well" style={{ transform: `rotate(${sway.toFixed(2)}deg)`, transformOrigin: "50% 100%" }}>
         {shards.map((shard) => (
-          <i key={shard.id} className="stack-shard" style={{ left: `${shard.x}%`, width: `${shard.w}%`, bottom: `${(blocks.length - 1) * ROW - offset}px`, background: `hsl(${shard.hue} 92% 62%)`, ["--dir" as string]: shard.dir }} />
+          <i key={shard.id} className="stack-shard" style={{ left: `${shard.x}%`, width: `${shard.w}%`, bottom: `${(blocks.length - 1) * ROW - offset}px`, ["--tint" as string]: `hsl(${shard.hue} 92% 62%)`, ["--dir" as string]: shard.dir }} />
         ))}
         {blocks.map((block, index) => (
-          <i key={index} className="stack-block" style={{ left: `${block.x}%`, width: `${block.w}%`, bottom: `${index * ROW - offset}px`, background: `hsl(${block.hue} 92% ${52 + (index % 3) * 5}%)` }} />
+          <i key={index} className="stack-block" style={{ left: `${block.x}%`, width: `${block.w}%`, bottom: `${index * ROW - offset}px`, ["--tint" as string]: `hsl(${block.hue} 92% ${52 + (index % 3) * 5}%)` }} />
         ))}
-        {running && <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, background: `hsl(${moverHue} 96% 66%)` }} />}
+        {running && <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, ["--tint" as string]: `hsl(${moverHue} 96% 66%)` }} />}
       </div>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO DROP" : "TAP TO START"}</div>

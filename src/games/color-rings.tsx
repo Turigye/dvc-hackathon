@@ -89,8 +89,8 @@ export function ColorRings({ active, onFinish }: GameProps) {
       {gates.map((gate) => (
         <i key={gate.id} className={`ring ${gate.cleared ? "is-cleared" : ""}`} style={{ top: `${gate.y}%`, transform: `translate(-50%, -50%) rotate(${gate.angle}deg)`, background: `conic-gradient(${COLORS[0]} 0deg 90deg, ${COLORS[1]} 90deg 180deg, ${COLORS[2]} 180deg 270deg, ${COLORS[3]} 270deg 360deg)` }} />
       ))}
-      <i key={pulse} className="rings-ball" style={{ top: `${BALL_Y}%`, background: COLORS[ball], boxShadow: `0 0 26px ${COLORS[ball]}` }} />
-      {twin !== null && <i className="rings-twin" style={{ top: `${BALL_Y}%`, background: COLORS[twin], boxShadow: `0 0 18px ${COLORS[twin]}` }} />}
+      <i key={pulse} className="rings-ball" style={{ top: `${BALL_Y}%`, ["--tint" as string]: COLORS[ball], boxShadow: `0 0 26px ${COLORS[ball]}` }} />
+      {twin !== null && <i className="rings-twin" style={{ top: `${BALL_Y}%`, ["--tint" as string]: COLORS[twin], boxShadow: `0 0 18px ${COLORS[twin]}` }} />}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "SPIN TO MATCH" : "TAP TO START"}</div>
     </button>
