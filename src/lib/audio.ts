@@ -102,53 +102,163 @@ export function play(cue: Cue) {
   }
 }
 
-/* ---- Background music ----------------------------------------------------
- * Slow procedural pads rather than a soundtrack file: nothing to download, no
- * licence surface, and each world gets its own root note so swiping between
- * games changes the mood. Deliberately quiet and sparse — it should sit under
- * the cues, never compete with them.
+/* ---- Music: a real chiptune sequencer -------------------------------------
+ * The pads were ambient wallpaper. This is an actual 16-step tracker: bass,
+ * arpeggio, lead and percussion, scheduled against the audio clock with a
+ * lookahead window so timing does not drift when the main thread is busy.
+ *
+ * Still zero files and zero dependencies — every voice is synthesised.
  */
 
-const SCALE = [0, 3, 5, 7, 10, 12];
-let musicTimer: number | null = null;
-let musicRoot = 110;
+type Track = {
+  bpm: number;
+  root: number;
+  scale: number[];
+  /** 16 steps. -1 is a rest; other numbers index into `scale`. */
+  bass: number[];
+  arp: number[];
+  lead: number[];
+  /** 16 steps of percussion: k = kick, h = hat, "." = rest. */
+  drums: string;
+};
 
-export function startMusic(worldIndex: number, tempo: "calm" | "driving" = "calm") {
+const MINOR = [0, 2, 3, 5, 7, 8, 10];
+const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+
+/** One track per game. Tempo and mode carry the mood; the feed changes music as you swipe. */
+const TRACKS: Record<string, Track> = {
+  switchback: { bpm: 132, root: 110.0, scale: MINOR,
+    bass: [0, -1, 0, -1, 4, -1, 3, -1, 0, -1, 0, -1, 5, -1, 4, -1],
+    arp:  [0, 3, 4, 7, 4, 3, 0, 3, 0, 3, 4, 7, 9, 7, 4, 3],
+    lead: [-1, -1, -1, -1, 7, -1, -1, 9, -1, -1, 7, -1, -1, -1, 4, -1],
+    drums: "k..hk..hk..hk.hh" },
+  skyline: { bpm: 104, root: 130.8, scale: MAJOR,
+    bass: [0, -1, -1, 4, -1, -1, 2, -1, 0, -1, -1, 4, -1, 5, -1, -1],
+    arp:  [4, 6, 7, 6, 4, 2, 4, 6, 4, 6, 7, 9, 7, 6, 4, 2],
+    lead: [-1, -1, 7, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, 7, -1],
+    drums: "k...h...k...h..." },
+  pulse: { bpm: 140, root: 123.5, scale: MINOR,
+    bass: [0, 0, -1, 0, 5, -1, 5, -1, 3, 3, -1, 3, 7, -1, 5, -1],
+    arp:  [7, 4, 3, 4, 7, 9, 7, 4, 7, 4, 3, 4, 10, 9, 7, 4],
+    lead: [-1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, 9, -1, -1, -1, -1],
+    drums: "k.hhk.hhk.hhk.hh" },
+  reflex: { bpm: 126, root: 116.5, scale: MINOR,
+    bass: [0, -1, 3, -1, 0, -1, 5, -1, 0, -1, 3, -1, 7, -1, 5, -1],
+    arp:  [0, 4, 7, 4, 3, 7, 10, 7, 0, 4, 7, 4, 5, 9, 12, 9],
+    lead: [-1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, 12, -1],
+    drums: "k..hk.h.k..hk.h." },
+  overload: { bpm: 96, root: 98.0, scale: MINOR,
+    bass: [0, -1, -1, -1, 3, -1, -1, -1, 5, -1, -1, -1, 4, -1, -1, -1],
+    arp:  [0, 3, 5, 3, 5, 7, 5, 3, 0, 3, 5, 7, 9, 7, 5, 3],
+    lead: [-1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1, 9],
+    drums: "k.....h.k.....h." },
+  swarm: { bpm: 118, root: 103.8, scale: MINOR,
+    bass: [0, -1, 0, 3, -1, 0, 5, -1, 0, -1, 0, 3, -1, 7, 5, -1],
+    arp:  [3, 5, 7, 9, 7, 5, 3, 5, 3, 5, 7, 10, 9, 7, 5, 3],
+    lead: [-1, -1, -1, -1, 9, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1],
+    drums: "k..hk..hk.hhk..h" },
+  slice: { bpm: 150, root: 146.8, scale: MAJOR,
+    bass: [0, -1, 4, -1, 2, -1, 4, -1, 0, -1, 4, -1, 5, -1, 4, -1],
+    arp:  [7, 9, 11, 9, 7, 4, 7, 9, 7, 9, 11, 13, 11, 9, 7, 4],
+    lead: [-1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1, 13, -1, -1, -1],
+    drums: "k.hhk.hhk.hhkhhh" },
+  "color-rings": { bpm: 112, root: 138.6, scale: MAJOR,
+    bass: [0, -1, -1, 4, -1, 2, -1, -1, 0, -1, -1, 4, -1, 5, -1, -1],
+    arp:  [4, 7, 9, 7, 4, 2, 4, 7, 4, 7, 9, 11, 9, 7, 4, 2],
+    lead: [-1, -1, 9, -1, -1, -1, 7, -1, -1, -1, 11, -1, -1, -1, 9, -1],
+    drums: "k...h.h.k...h.h." },
+};
+
+const noteAt = (track: Track, degree: number, octave = 0) =>
+  track.root * Math.pow(2, (track.scale[degree % track.scale.length] + 12 * (octave + Math.floor(degree / track.scale.length))) / 12);
+
+let musicTimer: number | null = null;
+let step = 0;
+let nextNoteTime = 0;
+let current: Track | null = null;
+
+function tone(freq: number, at: number, seconds: number, wave: OscillatorType, level: number) {
+  if (!context || !master) return;
+  const osc = context.createOscillator();
+  const gain = context.createGain();
+  osc.type = wave;
+  osc.frequency.setValueAtTime(freq, at);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(level, at + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + seconds);
+  osc.connect(gain);
+  gain.connect(master);
+  osc.onended = () => gain.disconnect();
+  osc.start(at);
+  osc.stop(at + seconds + 0.02);
+}
+
+function percussion(kind: "k" | "h", at: number) {
+  if (!context || !master) return;
+  if (kind === "k") {
+    const osc = context.createOscillator();
+    const gain = context.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(150, at);
+    osc.frequency.exponentialRampToValueAtTime(46, at + 0.12);
+    gain.gain.setValueAtTime(0.14, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+    osc.connect(gain); gain.connect(master);
+    osc.onended = () => gain.disconnect();
+    osc.start(at); osc.stop(at + 0.18);
+    return;
+  }
+  const length = Math.floor(context.sampleRate * 0.03);
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  gain.gain.setValueAtTime(0.05, at);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.03);
+  source.connect(gain); gain.connect(master);
+  source.onended = () => gain.disconnect();
+  source.start(at);
+}
+
+function scheduleStep(track: Track, index: number, at: number) {
+  const beat = 60 / track.bpm / 4;
+  if (track.bass[index] >= 0) tone(noteAt(track, track.bass[index], -2), at, beat * 1.8, "square", 0.075);
+  if (track.arp[index] >= 0) tone(noteAt(track, track.arp[index], 0), at, beat * 0.85, "triangle", 0.045);
+  if (track.lead[index] >= 0) tone(noteAt(track, track.lead[index], 1), at, beat * 2.4, "square", 0.035);
+  const hit = track.drums[index];
+  if (hit === "k" || hit === "h") percussion(hit, at);
+}
+
+/** Starts the track for a game slug. Safe to call repeatedly. */
+export function startMusic(slug: string) {
+  const next = TRACKS[slug] ?? TRACKS.switchback;
+  if (current === next && musicTimer !== null) return;
   stopMusic();
   if (muted) return;
   const ctx = ensureContext();
   if (!ctx || !master) return;
-  musicRoot = [110, 98, 123.5, 87, 130.8, 116.5, 103.8, 92.5][worldIndex % 8];
-  let step = 0;
-  const voice = () => {
-    if (muted || !context || !master) return;
-    const semitone = SCALE[step % SCALE.length];
-    const freq = musicRoot * Math.pow(2, semitone / 12);
-    for (const mult of [1, 1.5]) {
-      const osc = context.createOscillator();
-      const gain = context.createGain();
-      const now = context.currentTime;
-      osc.type = tempo === "driving" ? "triangle" : "sine";
-      osc.frequency.value = freq * mult;
-      gain.gain.setValueAtTime(0.0001, now);
-      const swell = tempo === "driving" ? 0.35 : 0.9;
-      const tail = tempo === "driving" ? 1.5 : 2.6;
-      gain.gain.exponentialRampToValueAtTime(tempo === "driving" ? 0.045 : 0.035, now + swell);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + tail);
-      osc.connect(gain);
-      gain.connect(master);
-      osc.onended = () => gain.disconnect();
-      osc.start(now);
-      osc.stop(now + (tempo === "driving" ? 1.6 : 2.7));
+  if (ctx.state === "suspended") void ctx.resume();
+  current = next;
+  step = 0;
+  nextNoteTime = ctx.currentTime + 0.06;
+  const beat = 60 / next.bpm / 4;
+  // Lookahead scheduler: the timer only queues notes, the audio clock plays
+  // them, so a busy main thread cannot make the music stutter.
+  musicTimer = window.setInterval(() => {
+    if (!context || muted || !current) return;
+    while (nextNoteTime < context.currentTime + 0.12) {
+      scheduleStep(current, step % 16, nextNoteTime);
+      nextNoteTime += beat;
+      step += 1;
     }
-    step += step % 3 === 2 ? 2 : 1;
-  };
-  voice();
-  musicTimer = window.setInterval(voice, tempo === "driving" ? 1500 : 2400);
+  }, 25);
 }
 
 export function stopMusic() {
   if (musicTimer !== null) { window.clearInterval(musicTimer); musicTimer = null; }
+  current = null;
 }
 
 /** Stops everything immediately — used when a card leaves the viewport. */

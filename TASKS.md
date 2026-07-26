@@ -25,7 +25,7 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
 - [x] Pause / resume, including auto-pause when the tab hides
 - [x] Rival ghost marker — "N TO PASS NOVA" on every card
-- [x] Per-game music character — reflex games get a driving bed, thinking games stay on pads
+- [x] Real chiptune music — 16-step sequencer with bass, arp, lead and drums; one original track per game, lookahead-scheduled
 - [x] Codex art wired in: eight menu tiles, submission cover, OG crop
 - [x] Fixed `.world-magenta` — Skyline had no colour world after the accent rename
 
