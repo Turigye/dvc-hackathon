@@ -1,6 +1,7 @@
 "use client";
 
 import { GameController, Play, SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
+import Image from "next/image";
 import { games } from "@/lib/games";
 
 /**
@@ -64,6 +65,7 @@ export function GameMenu({
       <div className="menu-grid">
         {games.map((game) => (
           <button key={game.slug} type="button" className={`tile world-${game.accent}`} onClick={() => onPick(game.slug)}>
+            <Image className="tile-art" src={`/assets/menu-${game.slug}.webp`} alt="" width={256} height={256} sizes="(max-width: 480px) 46vw, 220px" />
             <span className="tile-name">{game.title}</span>
             <span className="tile-rule">{game.kicker}</span>
             <span className="tile-best">{bests[game.slug] ? `HI ${bests[game.slug]}` : "NEW"}</span>

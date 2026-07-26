@@ -24,23 +24,24 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Boot screen with CSS logo — doubles as the audio gate (browsers need a gesture)
 - [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
 - [x] Pause / resume, including auto-pause when the tab hides
+- [x] Rival ghost marker — "N TO PASS NOVA" on every card
+- [x] Per-game music character — reflex games get a driving bed, thinking games stay on pads
+- [x] Codex art wired in: eight menu tiles, submission cover, OG crop
 - [x] Fixed `.world-magenta` — Skyline had no colour world after the accent rename
 
 ## Pending — Claude
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | **Rival ghost marker** | "127 to pass NOVA" during play — makes the board matter mid-run. |
-| 2 | Per-game music variation | Currently one pad set with a per-world root; give fast games a pulse. |
-| 3 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
-| 4 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
+| 1 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
+| 2 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
 
 ## Pending — Codex
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | **In-game art pass, all eight** | Prompts in `CODEX-ART-PROMPTS.md`. Blockout classes listed per game. |
-| 2 | **Submission cover image** | Prompt in `CODEX-ART-PROMPTS.md`. |
+| 1 | **In-game art pass, all eight** | Menu tiles and cover are DONE. Remaining: per-game backgrounds and the blockout classes listed in `CODEX-ART-PROMPTS.md`. |
+| 2 | ~~Submission cover~~ | ✅ Delivered with OG crop and manifest entries. |
 | 3 | Anti-cheat on the score endpoint | Deprioritised by the user but still open. |
 | 4 | One real phone OAuth round-trip | Providers report enabled; no token round-trip observed yet. |
 

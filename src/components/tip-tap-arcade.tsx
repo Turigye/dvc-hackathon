@@ -20,6 +20,8 @@ import type { GameResult } from "@/games/types";
 
 const EMPTY: LeaderboardResponse = { entries: [], playerRank: null, percentile: 0, playerBest: 0 };
 const CYCLE = 4;
+/** Reflex games get a faster, brighter bed; the thinking games stay on pads. */
+const DRIVING = new Set<string>(["switchback", "pulse", "reflex", "swarm"]);
 
 /** Machine-voice reactions. Picked by how the run went, not at random. */
 const TAUNTS = {
@@ -86,13 +88,23 @@ export function TipTapArcade() {
 
   const activeSlug = deck[activeIndex]?.slug ?? games[0].slug;
 
+  /** The player immediately above you, and what it costs to pass them. */
+  const rivalFor = (board: LeaderboardResponse) => {
+    if (!board.entries.length) return null;
+    const above = board.playerRank
+      ? board.entries.find((entry) => entry.rank === board.playerRank! - 1)
+      : board.entries[board.entries.length - 1];
+    if (!above || above.isYou) return null;
+    return { name: above.player, needed: Math.max(1, above.score - board.playerBest + 1) };
+  };
+
   const loadBoard = useCallback(async (game: GameSlug) => {
     if (!deviceId) return;
     const response = await fetch(`/api/leaderboard?game=${game}&device=${deviceId}`, { cache: "no-store" });
     if (response.ok) { const board = await response.json() as LeaderboardResponse; setBoards((current) => ({ ...current, [game]: board })); }
   }, [deviceId]);
 
-  useEffect(() => { if (!mute && booted && !paused) startMusic(games.findIndex((g) => g.slug === activeSlug)); return () => stopMusic(); }, [activeSlug, mute, booted, paused]);
+  useEffect(() => { if (!mute && booted && !paused) startMusic(games.findIndex((g) => g.slug === activeSlug), DRIVING.has(activeSlug) ? "driving" : "calm"); return () => stopMusic(); }, [activeSlug, mute, booted, paused]);
   useEffect(() => { void loadBoard(activeSlug); const id = window.setInterval(() => void loadBoard(activeSlug), 8000); return () => clearInterval(id); }, [activeSlug, loadBoard]);
 
   const submit = useCallback(async (game: GameSlug, key: string, data: GameResult) => {
@@ -178,6 +190,11 @@ export function TipTapArcade() {
                   ))}
                   {!board.entries.length && <span>BE THE FIRST ON THE BOARD</span>}
                 </button>
+
+                {(() => {
+                  const rival = rivalFor(board);
+                  return rival ? <div className="rival"><span>{rival.needed}</span> TO PASS {rival.name}</div> : null;
+                })()}
 
                 <div className="swipe-cue"><ArrowDown weight="bold" /> SWIPE FOR NEXT</div>
               </div>

@@ -113,7 +113,7 @@ const SCALE = [0, 3, 5, 7, 10, 12];
 let musicTimer: number | null = null;
 let musicRoot = 110;
 
-export function startMusic(worldIndex: number) {
+export function startMusic(worldIndex: number, tempo: "calm" | "driving" = "calm") {
   stopMusic();
   if (muted) return;
   const ctx = ensureContext();
@@ -128,21 +128,23 @@ export function startMusic(worldIndex: number) {
       const osc = context.createOscillator();
       const gain = context.createGain();
       const now = context.currentTime;
-      osc.type = "sine";
+      osc.type = tempo === "driving" ? "triangle" : "sine";
       osc.frequency.value = freq * mult;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.035, now + 0.9);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.6);
+      const swell = tempo === "driving" ? 0.35 : 0.9;
+      const tail = tempo === "driving" ? 1.5 : 2.6;
+      gain.gain.exponentialRampToValueAtTime(tempo === "driving" ? 0.045 : 0.035, now + swell);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + tail);
       osc.connect(gain);
       gain.connect(master);
       osc.onended = () => gain.disconnect();
       osc.start(now);
-      osc.stop(now + 2.7);
+      osc.stop(now + (tempo === "driving" ? 1.6 : 2.7));
     }
     step += step % 3 === 2 ? 2 : 1;
   };
   voice();
-  musicTimer = window.setInterval(voice, 2400);
+  musicTimer = window.setInterval(voice, tempo === "driving" ? 1500 : 2400);
 }
 
 export function stopMusic() {
