@@ -363,3 +363,46 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .rings-twin { position:absolute; left:calc(50% + 26px); width:22px; height:22px; border-radius:50%; transform:translate(-50%, -50%); animation:pop 260ms ease-out; }
 
 .bug.is-queen { width:52px; height:52px; background:var(--pop2); box-shadow:0 0 26px var(--pop2); border:3px solid #fff; }
+
+/* ---- Sprite layer. Decoration only — the shapes underneath stay authoritative
+       and remain visible if an image fails to load. ---- */
+.runner-art, .chaser-art { pointer-events:none; }
+.runner-art { filter:drop-shadow(0 2px 3px rgb(0 0 0 / .55)); }
+/* With a sprite on top, the underlying shape becomes a soft ground glow rather
+   than a competing disc. It still shows at full strength if the image fails. */
+.card.is-playing .runner, .card.is-playing .pickup { opacity:.4; }
+.chaser-art { filter:drop-shadow(0 0 6px #E8391B); }
+.hazard image, .pickup + image { pointer-events:none; }
+@media (prefers-reduced-motion:reduce) { .runner-art, .chaser-art { filter:none; } }
+
+/* ---- Sprite skins for the DOM games. Background images only: every element
+       keeps its measured size, so hit areas never come from image bounds. ---- */
+.bug { background-image:url("/assets/games/swarm/sprite-bug-cyan.png"); background-size:contain; background-repeat:no-repeat; background-position:center; }
+.bug:nth-of-type(3n) { background-image:url("/assets/games/swarm/sprite-bug-lavender.png"); }
+.bug:nth-of-type(3n+1) { background-image:url("/assets/games/swarm/sprite-bug-pink.png"); }
+.bug.is-bad { background-image:url("/assets/games/swarm/sprite-bug-predator.png"); }
+.bug.is-queen { background-image:url("/assets/games/swarm/sprite-breeding-pair.png"); }
+
+.slice-shape { background-image:url("/assets/games/slice/sprite-berry.png"); background-size:contain; background-repeat:no-repeat; background-position:center; }
+.slice-shape:nth-of-type(3n) { background-image:url("/assets/games/slice/sprite-citrus.png"); }
+.slice-shape:nth-of-type(3n+1) { background-image:url("/assets/games/slice/sprite-melon.png"); }
+.slice-shape:nth-of-type(4n) { background-image:url("/assets/games/slice/sprite-star-fruit.png"); }
+.slice-shape.is-bomb { background-image:url("/assets/games/slice/sprite-bomb.png"); border:0; box-shadow:none; }
+.slice-half { background-image:url("/assets/games/slice/sprite-split-halves.png"); background-size:contain; background-repeat:no-repeat; }
+
+.rings-ball { background-image:url("/assets/games/color-rings/sprite-orb-magenta.png"); background-size:contain; background-repeat:no-repeat; background-position:center; }
+.rings-twin { background-image:url("/assets/games/color-rings/sprite-orb-cyan.png"); background-size:contain; background-repeat:no-repeat; background-position:center; }
+
+.stack-mover { background-image:url("/assets/games/skyline/sprite-moving-block.png"); background-size:100% 100%; }
+.stack-block { background-image:url("/assets/games/skyline/sprite-foundation-block.png"); background-size:100% 100%; }
+.stack-shard { background-image:url("/assets/games/skyline/sprite-shard-cyan.png"); background-size:100% 100%; }
+
+.core-fill { background-image:url("/assets/games/overload/sprite-core-overcharged.png"); background-size:cover; background-position:bottom; }
+.core-band { background-image:url("/assets/games/overload/sprite-safe-band.png"); background-size:100% 100%; }
+
+.pulse-gate .is-blocked { background-image:url("/assets/games/pulse/sprite-gate-honest.png"); background-size:100% 100%; }
+.pulse-gate.is-liar .is-blocked { background-image:url("/assets/games/pulse/sprite-gate-liar.png"); }
+.pulse-bird { background-image:url("/assets/games/pulse/sprite-bird-cyan.png"); background-size:contain; background-repeat:no-repeat; background-position:center; }
+
+.dial-art { opacity:.9; }
+.reflex-stage.is-hit .dial-art { filter:drop-shadow(0 0 8px #C6FF00); }

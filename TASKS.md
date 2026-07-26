@@ -24,6 +24,7 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Boot screen with CSS logo — doubles as the audio gate (browsers need a gesture)
 - [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
 - [x] Pause / resume, including auto-pause when the tab hides
+- [x] **Sprite kits integrated across all eight games** — geometry untouched, CSS/SVG shapes remain fallbacks, sprites render only on the active card
 - [x] Sign-in offered on the boot screen; guests auto-assigned arcade initials
 - [x] Second differentiation pass on the derivative games — Skyline wind + rescue block, Slice chain reactions, Swarm queen, Color Rings split ball
 - [x] World background art wired in behind every game (Codex)
