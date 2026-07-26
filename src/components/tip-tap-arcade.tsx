@@ -20,6 +20,19 @@ import type { GameResult } from "@/games/types";
 const EMPTY: LeaderboardResponse = { entries: [], playerRank: null, percentile: 0, playerBest: 0 };
 const CYCLE = 4;
 
+/** Machine-voice reactions. Picked by how the run went, not at random. */
+const TAUNTS = {
+  poor: ["THAT WAS QUICK", "OOF", "BARELY TRIED", "EMBARRASSING"],
+  ok: ["NOT BAD", "DECENT", "KEEP GOING", "WARMING UP"],
+  good: ["SHOW OFF", "NICE RUN", "DANGEROUS", "ON FIRE"],
+  best: ["NEW BEST", "PERSONAL RECORD", "UNTOUCHABLE"],
+} as const;
+
+const taunt = (score: number, best: number) => {
+  const pool = score > best && score > 0 ? TAUNTS.best : score < 40 ? TAUNTS.poor : score < 150 ? TAUNTS.ok : TAUNTS.good;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
 const getDeviceId = () => {
   const key = "tip-tap-device-v1";
   const existing = localStorage.getItem(key);
@@ -106,7 +119,7 @@ export function TipTapArcade() {
               key={card.key}
               data-index={index}
               ref={(element) => { if (element) cards.current.set(card.key, element); else cards.current.delete(card.key); }}
-              className={`card world-${game.accent} ${playingKey === card.key ? "is-playing" : ""}`}
+              className={`card world-${game.accent} ${playingKey === card.key ? "is-playing" : ""} ${result?.key === card.key ? "is-over" : ""}`}
               aria-label={`${game.title} game`}
             >
               <div className="stage-host">
@@ -144,8 +157,8 @@ export function TipTapArcade() {
 
               {result?.key === card.key && (
                 <div className="result" role="status">
-                  <span>GAME OVER</span>
-                  <strong>{result.data.score}</strong>
+                  <span>{taunt(result.data.score, board.playerBest)}</span>
+                  <strong key={result.data.score}>{result.data.score}</strong>
                   <p>{result.data.label}{board.percentile ? ` — BEAT ${board.percentile}% OF PLAYERS` : ""}</p>
                   <div className="result-actions">
                     {account.signedIn

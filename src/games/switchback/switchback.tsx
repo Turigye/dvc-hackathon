@@ -88,7 +88,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
     <button type="button" className="stage switchback-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to flip rails" : "Tap to start Switchback"}>
       <div className="hud">
         <span>SCORE</span>
-        <strong>{String(state.score).padStart(3, "0")}</strong>
+        <strong key={state.score}>{String(state.score).padStart(3, "0")}</strong>
         {state.combo > 1 && <em className="combo">COMBO ×{state.combo}</em>}
         {state.chaserActive && (
           <em className={`chase-meter ${state.chaseGap < 1.2 ? "is-close" : ""}`} aria-label="Distance from the pursuer">

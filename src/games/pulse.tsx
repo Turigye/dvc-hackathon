@@ -101,7 +101,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
 
   return (
     <button type="button" className="stage pulse-stage" data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap to rise" : "Tap to start Pulse"}>
-      <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong></div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong></div>
       {gates.map((gate) => (
         <div key={gate.id} className={`pulse-gate ${gate.liar ? "is-liar" : ""}`} style={{ left: `${gate.x}%` }}>
           <i className="is-blocked" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }} />

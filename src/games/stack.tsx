@@ -99,7 +99,7 @@ export function Stack({ active, onFinish }: GameProps) {
 
   return (
     <button type="button" className="stage stack-stage" onPointerDown={drop} aria-label={running ? "Tap to drop the block" : "Tap to start Stack"}>
-      <div className="hud"><span>HEIGHT</span><strong>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}</div>
+      <div className="hud"><span>HEIGHT</span><strong key={score}>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}</div>
       <div className="stack-well" style={{ transform: `rotate(${sway.toFixed(2)}deg)`, transformOrigin: "50% 100%" }}>
         {shards.map((shard) => (
           <i key={shard.id} className="stack-shard" style={{ left: `${shard.x}%`, width: `${shard.w}%`, bottom: `${(blocks.length - 1) * ROW - offset}px`, background: `hsl(${shard.hue} 92% 62%)`, ["--dir" as string]: shard.dir }} />

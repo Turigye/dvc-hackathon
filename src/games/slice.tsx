@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 type Shape = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number; spin: number; rot: number; bomb?: boolean };
 type Half = { id: string; x: number; y: number; dir: number; hue: number; size: number; born: number };
@@ -22,6 +23,7 @@ export function Slice({ active, onFinish }: GameProps) {
   const [combo, setCombo] = useState(0);
   const [running, setRunning] = useState(false);
   const world = useRef({ shapes: [] as Shape[], lives: 3, score: 0, next: 0, start: 0, seq: 0, stroke: 0 });
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
 
@@ -79,6 +81,7 @@ export function Slice({ active, onFinish }: GameProps) {
     }
     const ids = new Set(hit.map((shape) => shape.id));
     w.shapes = w.shapes.filter((shape) => !ids.has(shape.id));
+    for (const shape of hit) fire(shape.x, shape.y, "score");
     w.stroke += hit.length;
     play(w.stroke > 2 ? "combo" : "score");
     w.score += hit.length * 10 * Math.max(1, w.stroke);
@@ -106,7 +109,7 @@ export function Slice({ active, onFinish }: GameProps) {
 
   return (
     <div className="stage slice-stage" onPointerDown={begin} onPointerMove={(event) => event.currentTarget.hasPointerCapture(event.pointerId) && track(event)} onPointerUp={() => { world.current.stroke = 0; setCombo(0); setTrail([]); }}>
-      <div className="hud"><span>SCORE</span><strong>{score}</strong>{combo > 1 && <em className="combo">COMBO ×{combo}</em>}</div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{score}</strong>{combo > 1 && <em className="combo">COMBO ×{combo}</em>}</div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {shapes.map((shape) => (
         <i key={shape.id} className={`slice-shape ${shape.bomb ? "is-bomb" : ""}`} style={{ left: `${shape.x}%`, top: `${shape.y}%`, width: `${shape.size}%`, background: shape.bomb ? "#12121A" : `hsl(${shape.hue} 95% 60%)`, transform: `translate(-50%, -50%) rotate(${Math.round(shape.rot)}deg)` }} />
@@ -119,6 +122,7 @@ export function Slice({ active, onFinish }: GameProps) {
           <polyline points={trail.map((point) => `${point.x},${point.y}`).join(" ")} />
         </svg>
       )}
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "SWIPE TO SLICE" : "SWIPE TO START"}</div>
     </div>
   );

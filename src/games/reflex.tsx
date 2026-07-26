@@ -80,7 +80,7 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
 
   return (
     <button type="button" className={`stage reflex-stage ${flash ? `is-${flash}` : ""}`} data-running={running ? "true" : "false"} onPointerDown={tap} aria-label={running ? "Tap when the sweep is inside the arc" : "Tap to start Reflex"}>
-      <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong>{streak > 1 && <em className="combo">STREAK ×{streak}</em>}</div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong>{streak > 1 && <em className="combo">STREAK ×{streak}</em>}</div>
       <svg className="reflex-dial" viewBox="0 0 100 100" aria-hidden="true">
         <circle className="dial-track" cx="50" cy="50" r="36" />
         <circle

@@ -113,7 +113,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       onPointerCancel={release}
       aria-label={state === "charging" ? "Release inside the band" : "Press and hold to start Overload"}
     >
-      <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong>{streak > 1 && <em className="combo">STREAK ×{streak}</em>}</div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong>{streak > 1 && <em className="combo">STREAK ×{streak}</em>}</div>
       <div className="core-track">
         <i className="core-band" style={{ bottom: `${band.at - band.width / 2}%`, height: `${band.width}%` }} />
         <i className="core-fill" style={{ height: `${Math.min(100, charge)}%` }} />

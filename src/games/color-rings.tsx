@@ -76,7 +76,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
 
   return (
     <button type="button" className="stage rings-stage" onPointerDown={spin} aria-label={running ? "Tap to spin the ring" : "Tap to start Color Rings"}>
-      <div className="hud"><span>SCORE</span><strong>{score}</strong></div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{score}</strong></div>
       {gates.map((gate) => (
         <i key={gate.id} className={`ring ${gate.cleared ? "is-cleared" : ""}`} style={{ top: `${gate.y}%`, transform: `translate(-50%, -50%) rotate(${gate.angle}deg)`, background: `conic-gradient(${COLORS[0]} 0deg 90deg, ${COLORS[1]} 90deg 180deg, ${COLORS[2]} 180deg 270deg, ${COLORS[3]} 270deg 360deg)` }} />
       ))}

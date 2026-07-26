@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
+import { Bursts, useBursts } from "@/components/burst";
 
 /**
  * SWARM — bugs cross the screen. Tap them before they escape.
@@ -22,6 +23,7 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
   const [lives, setLives] = useState(3);
   const [running, setRunning] = useState(false);
   const world = useRef({ bugs: [] as Bug[], score: 0, lives: 3, next: 0, seq: 0, start: 0, rate: 1 });
+  const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
   useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
@@ -93,12 +95,14 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
     const hit = w.bugs.find((bug) => Math.hypot(bug.x - x, (bug.y - y) * 0.46) < bug.r);
     if (!hit) return;
     if (hit.bad) {
+      fire(hit.x, hit.y, "fail");
       play("fail");
       setRunning(false);
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "TOUCHED THE RED" });
       return;
     }
     w.bugs = w.bugs.filter((bug) => bug.id !== hit.id);
+    fire(hit.x, hit.y, "score");
     play("pickup");
     w.score += 10;
     setScore(w.score);
@@ -108,11 +112,12 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
 
   return (
     <div className="stage swarm-stage" data-running={running ? "true" : "false"} onPointerDown={tap} role="button" tabIndex={0} aria-label={running ? "Tap the bugs, avoid the red" : "Tap to start Swarm"}>
-      <div className="hud"><span>SCORE</span><strong>{String(score).padStart(3, "0")}</strong></div>
+      <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong></div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {bugs.map((bug) => (
         <i key={bug.id} className={`bug ${bug.bad ? "is-bad" : ""}`} style={{ left: `${bug.x}%`, top: `${bug.y}%` }} />
       ))}
+      <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP THE SWARM" : "TAP TO START"}</div>
     </div>
   );
