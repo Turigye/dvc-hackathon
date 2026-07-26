@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 /**
  * PULSE — tap to rise, fall when you don't. Each gate has a coloured half;
@@ -62,6 +63,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
             return;
           }
           gate.cleared = true;
+          play("score");
           w.score += 10;
           w.phase = w.phase === 0 ? 1 : 0;
           w.speed = Math.min(52, w.speed + 0.9);
@@ -94,6 +96,7 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       return;
     }
     lift.current = true;
+    play("tap");
   };
 
   return (

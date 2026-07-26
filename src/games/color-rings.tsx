@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 type Gate = { id: number; y: number; angle: number; cleared: boolean };
 
@@ -40,6 +41,7 @@ export function ColorRings({ active, onFinish }: GameProps) {
           finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: w.score >= 200 ? "SPECTRUM" : "WRONG COLOUR" });
           return;
         }
+        play("score");
         w.score += 10;
         w.ball = Math.floor(Math.random() * 4);
         w.speed = Math.min(52, w.speed + 1.4);

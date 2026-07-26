@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 /**
  * REFLEX — a ring sweeps around the dial. Tap while it is inside the lit arc.
@@ -59,11 +60,13 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
     const hit = delta <= w.arc / 2;
     if (!hit) {
       setRunning(false);
+      play("fail");
       setFlash("miss");
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: w.streak >= 8 ? `STREAK ${w.streak}` : `${w.score} HITS` });
       return;
     }
     w.streak += 1;
+    play(w.streak > 3 ? "combo" : "score");
     w.score += 10 * Math.min(5, w.streak);
     w.arc = Math.max(MIN_ARC, w.arc - 2.6);
     w.speed = Math.min(430, w.speed + 13);

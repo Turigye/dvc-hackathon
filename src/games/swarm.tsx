@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 /**
  * SWARM — bugs cross the screen. Tap them before they escape.
@@ -92,11 +93,13 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
     const hit = w.bugs.find((bug) => Math.hypot(bug.x - x, (bug.y - y) * 0.46) < bug.r);
     if (!hit) return;
     if (hit.bad) {
+      play("fail");
       setRunning(false);
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "TOUCHED THE RED" });
       return;
     }
     w.bugs = w.bugs.filter((bug) => bug.id !== hit.id);
+    play("pickup");
     w.score += 10;
     setScore(w.score);
     setBugs([...w.bugs]);

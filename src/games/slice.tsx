@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 type Shape = { id: number; x: number; y: number; vx: number; vy: number; size: number; hue: number; spin: number; rot: number; bomb?: boolean };
 type Half = { id: string; x: number; y: number; dir: number; hue: number; size: number; born: number };
@@ -79,6 +80,7 @@ export function Slice({ active, onFinish }: GameProps) {
     const ids = new Set(hit.map((shape) => shape.id));
     w.shapes = w.shapes.filter((shape) => !ids.has(shape.id));
     w.stroke += hit.length;
+    play(w.stroke > 2 ? "combo" : "score");
     w.score += hit.length * 10 * Math.max(1, w.stroke);
     setScore(w.score);
     setCombo(w.stroke);

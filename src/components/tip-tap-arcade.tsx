@@ -1,9 +1,10 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- game loops intentionally drive state from rAF and observer callbacks. */
 
-import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, Trophy } from "@phosphor-icons/react";
+import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, SpeakerHigh, SpeakerSlash, Trophy } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientId } from "@/lib/client-id";
+import { isMuted, loadMutePreference, setMuted, silence } from "@/lib/audio";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
@@ -38,10 +39,11 @@ export function TipTapArcade() {
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [account, setAccount] = useState<{ signedIn: boolean; name?: string }>({ signedIn: false });
+  const [mute, setMute] = useState(true);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { setDeviceId(getDeviceId()); }, []);
+  useEffect(() => { setDeviceId(getDeviceId()); setMute(loadMutePreference()); }, []);
   // Ask once who is signed in. A logged-in player should never be prompted again.
   useEffect(() => { void fetch("/api/session", { cache: "no-store" }).then((r) => r.json()).then(setAccount).catch(() => {}); }, []);
 
@@ -49,7 +51,7 @@ export function TipTapArcade() {
     const observer = new IntersectionObserver((entries) => {
       const top = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       const index = top?.target.getAttribute("data-index");
-      if (index !== null && index !== undefined) { setActiveIndex(Number(index)); setResult(null); }
+      if (index !== null && index !== undefined) { setActiveIndex(Number(index)); setResult(null); silence(); }
     }, { threshold: [.6] });
     cards.current.forEach((card) => observer.observe(card));
     return () => observer.disconnect();
@@ -85,7 +87,13 @@ export function TipTapArcade() {
     <main className="arcade">
       <header className="topbar">
         <span className="wordmark">THUMB<b>TRANCE</b></span>
-        <span className="counter">{(activeIndex % games.length) + 1} / {games.length}</span>
+        <div className="top-actions">
+          <button type="button" className="mute" aria-pressed={!mute} aria-label={mute ? "Turn sound on" : "Turn sound off"}
+            onClick={() => setMute(setMuted(!isMuted()))}>
+            {mute ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />}
+          </button>
+          <span className="counter">{(activeIndex % games.length) + 1} / {games.length}</span>
+        </div>
       </header>
 
       <div className="feed" ref={feed}>

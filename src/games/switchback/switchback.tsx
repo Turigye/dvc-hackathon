@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "../types";
+import { play } from "@/lib/audio";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
 import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
 
@@ -37,8 +38,12 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       flip.current = false;
       world.current = next;
       setState(next);
+      if (next.event === "near-miss") play("near");
+      else if (next.event === "coin" || next.event === "shield") play("pickup");
+      else if (next.event === "boost") play("power");
       if (next.failed) {
         setRunning(false);
+        play("fail");
         finish.current({
           score: next.score,
           durationMs: Math.max(1000, Date.now() - started.current),
@@ -65,6 +70,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       return;
     }
     flip.current = true;
+    play("flip");
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(8);
   };
 

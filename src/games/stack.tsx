@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 type Block = { x: number; w: number; hue: number };
 type Shard = { id: number; x: number; w: number; hue: number; dir: number };
@@ -71,6 +72,7 @@ export function Stack({ active, onFinish }: GameProps) {
     const overlap = right - left;
     if (overlap <= 1.5) {
       setRunning(false);
+      play("fail");
       const height = list.current.length - 1;
       finish.current({ score: height * 10 + perfect * 25, durationMs: Math.max(1000, Date.now() - s.start), label: height >= 12 ? "SKYSCRAPER" : `${height} HIGH` });
       return;
@@ -80,6 +82,7 @@ export function Stack({ active, onFinish }: GameProps) {
       setShards((current) => [...current, { id: Date.now(), x: s.x < left ? s.x : right, w: trimmed, hue: s.hue, dir: s.x < left ? -1 : 1 }].slice(-3));
       setPerfect(0);
     } else {
+      play("combo");
       setPerfect((value) => value + 1);
     }
     s.w = overlap;

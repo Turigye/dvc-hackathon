@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
+import { play } from "@/lib/audio";
 
 /**
  * OVERLOAD — press and hold to charge the core, release before it blows.
@@ -77,6 +78,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       // supercharge instead — so greed is a real decision, not a mistake.
       const margin = w.charge - high;
       if (margin < 6 && Math.random() < 0.4) {
+        play("best");
         w.streak += 1;
         w.score += 60;
         w.charge = 0;
@@ -88,6 +90,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "OVERLOADED" });
       return;
     }
+    play("score");
     const accuracy = 1 - Math.abs(w.charge - w.at) / (w.width / 2);
     w.streak += 1;
     w.score += Math.round(10 + accuracy * 20) * Math.min(4, w.streak);

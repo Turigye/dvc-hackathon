@@ -207,3 +207,8 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .dial-decoy { stroke:rgb(255 255 255 / .45); stroke-width:2; stroke-linecap:round; stroke-dasharray:4 3; }
 
 .slice-shape.is-bomb { border:3px solid #FF2E88; box-shadow:0 0 22px #FF2E88, inset 0 0 14px rgb(255 46 136 / .5); border-radius:50%; }
+
+.top-actions { display:flex; align-items:center; gap:8px; pointer-events:auto; }
+.mute { display:grid; place-items:center; width:34px; height:34px; border:1.5px solid var(--line); border-radius:999px; background:rgb(0 0 0 / .3); color:var(--paper); backdrop-filter:blur(8px); }
+.mute svg { width:16px; height:16px; }
+.mute[aria-pressed="true"] { color:var(--pop); border-color:var(--pop); }
