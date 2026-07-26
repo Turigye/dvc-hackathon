@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
+import { GameArt } from "@/components/game-art";
 
 /**
  * SWARM — bugs cross the screen. Tap them before they escape.
@@ -40,19 +41,20 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
       w.next -= dt;
       if (w.next <= 0) {
         const fromLeft = Math.random() < 0.5;
-        const speed = 16 + Math.random() * 14 + w.score / 90;
+        const speed = 10 + Math.random() * 8 + w.score / 180;
+        const queen = w.score > 90 && !w.bugs.some((bug) => bug.queen) && Math.random() < 0.3;
         w.bugs.push({
           id: ++w.seq,
-          x: fromLeft ? -8 : 108,
-          y: 16 + Math.random() * 68,
+          x: fromLeft ? 6 : 94,
+          y: 18 + Math.random() * 60,
           vx: fromLeft ? speed : -speed,
           vy: (Math.random() - 0.5) * 12,
-          r: 7.5,
+          r: queen ? 10.5 : 7.8,
           bad: w.score > 60 && Math.random() < 0.24,
-          queen: w.score > 90 && !w.bugs.some((bug) => bug.queen) && Math.random() < 0.3,
+          queen,
           spawnIn: 1.1,
         });
-        w.next = Math.max(0.32, 1.15 - w.score / 700);
+        w.next = Math.max(0.42, 1 - w.score / 900);
       }
 
       const kept: Bug[] = [];
@@ -64,7 +66,7 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
           bug.spawnIn = (bug.spawnIn ?? 1.1) - dt;
           if (bug.spawnIn <= 0) {
             bug.spawnIn = 1.5;
-            hatched.push({ id: ++w.seq, x: bug.x, y: bug.y, vx: bug.vx * 1.5, vy: (Math.random() - 0.5) * 22, r: 6.5, bad: false });
+            hatched.push({ id: ++w.seq, x: bug.x, y: bug.y, vx: bug.vx * 1.3, vy: (Math.random() - 0.5) * 18, r: 7.4, bad: false });
           }
         }
         bug.x += bug.vx * dt;
@@ -128,7 +130,17 @@ export function Swarm({ active, onFinish, onRunningChange }: GameProps) {
       <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong></div>
       <div className="lives" aria-label={`${lives} lives left`}>{[0, 1, 2].map((index) => <i key={index} className={index < lives ? "life" : "life is-lost"} />)}</div>
       {bugs.map((bug) => (
-        <i key={bug.id} className={`bug ${bug.bad ? "is-bad" : ""} ${bug.queen ? "is-queen" : ""}`} style={{ left: `${bug.x}%`, top: `${bug.y}%` }} />
+        <i key={bug.id} className={`bug ${bug.bad ? "is-bad" : ""} ${bug.queen ? "is-queen" : ""}`} style={{ left: `${bug.x}%`, top: `${bug.y}%` }}>
+          <GameArt
+            active={active}
+            className="swarm-bug-art"
+            src={bug.queen
+              ? "/assets/games/swarm/sprite-breeding-pair.png"
+              : bug.bad
+                ? "/assets/games/swarm/sprite-bug-predator.png"
+                : `/assets/games/swarm/sprite-bug-${["cyan", "pink", "lavender", "violet"][bug.id % 4]}.png`}
+          />
+        </i>
       ))}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP THE SWARM" : "TAP TO START"}</div>

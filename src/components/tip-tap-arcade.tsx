@@ -179,12 +179,12 @@ export function TipTapArcade() {
 
               <div className="stage-host">
                 {card.slug === "switchback" && <Switchback active={live} onFinish={(data) => void submit("switchback", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
-                {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} />}
+                {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "pulse" && <Pulse active={live} onFinish={(data) => void submit("pulse", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "reflex" && <Reflex active={live} onFinish={(data) => void submit("reflex", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "overload" && <Overload active={live} onFinish={(data) => void submit("overload", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "swarm" && <Swarm active={live} onFinish={(data) => void submit("swarm", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
-                {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} />}
+                {card.slug === "slice" && <Slice active={live} onFinish={(data) => void submit("slice", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
               </div>
 
               <div className="chrome">

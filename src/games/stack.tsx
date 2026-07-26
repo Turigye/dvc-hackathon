@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
+import { GameArt } from "@/components/game-art";
 
 type Block = { x: number; w: number; hue: number };
 type Shard = { id: number; x: number; w: number; hue: number; dir: number };
@@ -16,7 +17,7 @@ const VISIBLE = 12;
 
 /** STACK — a block slides across the top of the tower; tap to drop it.
  *  Whatever hangs over the edge is sliced off, so the tower narrows every turn. */
-export function Stack({ active, onFinish }: GameProps) {
+export function Stack({ active, onFinish, onRunningChange }: GameProps) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [shards, setShards] = useState<Shard[]>([]);
   const [running, setRunning] = useState(false);
@@ -31,6 +32,7 @@ export function Stack({ active, onFinish }: GameProps) {
   const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
   useEffect(() => { finish.current = onFinish; });
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
 
   useEffect(() => {
     if (!running || !active) return;
@@ -113,7 +115,7 @@ export function Stack({ active, onFinish }: GameProps) {
   const score = Math.max(0, blocks.length - 1) * 10 + perfect * 25;
 
   return (
-    <button type="button" className="stage stack-stage" onPointerDown={drop} aria-label={running ? "Tap to drop the block" : "Tap to start Stack"}>
+    <button type="button" className="stage stack-stage" data-running={running ? "true" : "false"} onPointerDown={drop} aria-label={running ? "Tap to drop the block" : "Tap to start Stack"}>
       <div className="hud"><span>{Math.abs(wind) > 6 ? "WINDY" : "HEIGHT"}</span><strong key={score}>{score}</strong>{perfect > 1 && <em className="combo">PERFECT ×{perfect}</em>}
         {rescue && <em className="combo">RESCUE BLOCK</em>}</div>
       <div className="stack-well" style={{ transform: `rotate(${sway.toFixed(2)}deg)`, transformOrigin: "50% 100%" }}>
@@ -123,8 +125,13 @@ export function Stack({ active, onFinish }: GameProps) {
         {blocks.map((block, index) => (
           <i key={index} className="stack-block" style={{ left: `${block.x}%`, width: `${block.w}%`, bottom: `${index * ROW - offset}px`, ["--tint" as string]: `hsl(${block.hue} 92% ${52 + (index % 3) * 5}%)` }} />
         ))}
-        {running && <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, ["--tint" as string]: `hsl(${moverHue} 96% 66%)` }} />}
+        {running && (
+          <div ref={mover} className="stack-mover" style={{ bottom: `${blocks.length * ROW - offset}px`, ["--tint" as string]: `hsl(${moverHue} 96% 66%)` }}>
+            <GameArt active={active} className="stack-drone-art" src="/assets/games/skyline/sprite-builder-drone.png" />
+          </div>
+        )}
       </div>
+      {perfect > 0 && <GameArt active={active} className="stack-perfect-art" src="/assets/games/skyline/sprite-perfect-burst.png" />}
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO DROP" : "TAP TO START"}</div>
     </button>

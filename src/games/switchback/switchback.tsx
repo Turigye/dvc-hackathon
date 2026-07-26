@@ -8,6 +8,31 @@ import { Bursts, useBursts } from "@/components/burst";
 import { LOOKAHEAD, createSwitchbackState, offsetOf, segmentOf, step, type SwitchbackState } from "./simulation";
 import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry";
 
+type SvgArtProps = {
+  active: boolean;
+  className: string;
+  src: string;
+  x: number;
+  y: number;
+  size: number;
+};
+
+/** Presentation-only SVG image. Its bounds never participate in simulation. */
+function SvgArt({ active, className, src, x, y, size }: SvgArtProps) {
+  if (!active) return null;
+  return (
+    <image
+      className={`switchback-art ${className}`}
+      href={src}
+      x={x - size / 2}
+      y={y - size / 2}
+      width={size}
+      height={size}
+      preserveAspectRatio="xMidYMid meet"
+    />
+  );
+}
+
 /** Where the runner sits vertically on screen, as a fraction of the viewBox. */
 const RUNNER_SCREEN_Y = 0.55;
 /** viewBox is 100 wide; height tracks a tall phone so `slice` does not crop the runner. */
@@ -120,6 +145,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         {state.hazards.map((hazard) => {
           const start = railPoint(hazard.segment, hazard.from, hazard.rail);
           const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);
+          const art = railPoint(hazard.segment, (hazard.from + Math.min(1, hazard.to)) / 2, hazard.rail);
           return (
             <g key={hazard.id} className={`hazard is-${hazard.kind}`}>
               <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
@@ -128,6 +154,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
                 const pivot = railPoint(hazard.segment, hazard.switchAt ?? hazard.from, hazard.rail === 0 ? 1 : 0);
                 return <line className="sweep-arm" x1={pivot.x} y1={pivot.y} x2={other.x} y2={other.y} strokeWidth={10} strokeLinecap="round" />;
               })()}
+              <SvgArt active={active} className={`is-${hazard.kind}`} src={`/assets/games/switchback/sprite-${hazard.kind}.png`} x={art.x} y={art.y} size={hazard.kind === "sweeper" ? 17 : 14} />
             </g>
           );
         })}
@@ -137,6 +164,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           return (
             <g key={pickup.id}>
               <circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />
+              <SvgArt active={active} className={`is-${pickup.kind}`} src={`/assets/games/switchback/sprite-${pickup.kind}.png`} x={x} y={y} size={11} />
             </g>
           );
         })}
@@ -148,11 +176,13 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           return (
             <g>
               <circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />
+              <SvgArt active={active} className="is-chaser" src="/assets/games/switchback/sprite-chaser.png" x={spot.x} y={spot.y} size={16} />
             </g>
           );
         })()}
 
         <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
+        <SvgArt active={active} className="is-runner" src="/assets/games/switchback/sprite-runner.png" x={runner.x} y={runner.y} size={17} />
       </svg>
 
       <ul className="key" aria-label="What the shapes mean">

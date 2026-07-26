@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
+import { GameArt } from "@/components/game-art";
 
 /**
  * OVERLOAD — press and hold to charge the core, release before it blows.
@@ -55,8 +56,9 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
 
   useEffect(() => { if (!active) { setState("idle"); holding.current = false; } }, [active]);
 
-  const press = () => {
+  const press = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!active) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
     if (state !== "charging") {
       world.current = { charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: Date.now() };
       setCharge(0); setBand({ at: 62, width: START_BAND }); setScore(0); setStreak(0); setState("charging");
@@ -64,9 +66,10 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
     holding.current = true;
   };
 
-  const release = () => {
-    if (!active || state !== "charging") return;
+  const release = (event?: React.PointerEvent<HTMLButtonElement>) => {
+    if (event?.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     holding.current = false;
+    if (!active || state !== "charging") return;
     const w = world.current;
     const low = w.at - w.width / 2;
     const high = w.at + w.width / 2;
@@ -106,6 +109,11 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(10);
   };
 
+  const cancel = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    holding.current = false;
+  };
+
   return (
     <button
       type="button"
@@ -113,15 +121,16 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       data-running={state === "charging" ? "true" : "false"}
       onPointerDown={press}
       onPointerUp={release}
-      onPointerLeave={release}
-      onPointerCancel={release}
+      onPointerCancel={cancel}
       aria-label={state === "charging" ? "Release inside the band" : "Press and hold to start Overload"}
     >
       <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong>{streak > 1 && <em className="combo">STREAK ×{streak}</em>}</div>
       <div className="core-track">
         <i className="core-band" style={{ bottom: `${band.at - band.width / 2}%`, height: `${band.width}%` }} />
         <i className="core-fill" style={{ height: `${Math.min(100, charge)}%` }} />
+        <GameArt active={active} className="core-emblem-art" src={`/assets/games/overload/sprite-core-${charge > band.at + band.width / 2 || state === "blown" ? "overcharged" : "calm"}.png`} />
       </div>
+      <GameArt active={active} className="overload-operator-art" src="/assets/games/overload/sprite-operator-bot.png" />
       <Bursts bursts={bursts} />
       <div className="prompt">{state === "charging" ? "RELEASE IN THE BAND" : "HOLD TO CHARGE"}</div>
     </button>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { GameProps } from "./types";
 import { play } from "@/lib/audio";
 import { Bursts, useBursts } from "@/components/burst";
+import { GameArt } from "@/components/game-art";
 
 /**
  * PULSE — tap to rise, fall when you don't. Each gate has a coloured half;
@@ -107,11 +108,19 @@ export function Pulse({ active, onFinish, onRunningChange }: GameProps) {
       <div className="hud"><span>SCORE</span><strong key={score}>{String(score).padStart(3, "0")}</strong></div>
       {gates.map((gate) => (
         <div key={gate.id} className={`pulse-gate ${gate.liar ? "is-liar" : ""}`} style={{ left: `${gate.x}%` }}>
-          <i className="is-blocked" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }} />
-          <i className="is-blocked" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }} />
+          <i className="is-blocked gate-top" style={{ top: 0, height: `${(gate.safeTop ? 32 : 68) - GAP / 2}%` }}>
+            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}.png`} />
+          </i>
+          <i className="is-blocked gate-bottom" style={{ bottom: 0, height: `${100 - ((gate.safeTop ? 32 : 68) + GAP / 2)}%` }}>
+            <GameArt active={active} className="pulse-gate-cap" src={`/assets/games/pulse/sprite-gate-${gate.liar ? "liar" : "honest"}.png`} />
+          </i>
         </div>
       ))}
-      <i className="pulse-bird" style={{ top: `${y}%`, ["--tint" as string]: COLORS[phase], boxShadow: `0 0 22px ${COLORS[phase]}` }} />
+      <span className="pulse-bird" style={{ top: `${y}%`, ["--tint" as string]: COLORS[phase] }}>
+        <GameArt active={active} className="pulse-trail-art" src="/assets/games/pulse/sprite-energy-trail.png" />
+        <i className="pulse-bird-fallback" />
+        <GameArt active={active} className="pulse-bird-art" src={`/assets/games/pulse/sprite-bird-${phase === 0 ? "magenta" : "cyan"}.png`} />
+      </span>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP TO RISE" : "TAP TO START"}</div>
     </button>
