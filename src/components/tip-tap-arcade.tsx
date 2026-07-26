@@ -1,7 +1,8 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect -- game loops intentionally drive state from rAF and observer callbacks. */
 
-import { ArrowDown, GoogleLogo, Ranking, ShareNetwork, SpeakerHigh, SpeakerSlash, Trophy } from "@phosphor-icons/react";
+import { ArrowDown, GameController, GoogleLogo, Pause, Play, Ranking, ShareNetwork, SpeakerHigh, SpeakerSlash, Trophy } from "@phosphor-icons/react";
+import { Boot, GameMenu } from "@/components/boot";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientId } from "@/lib/client-id";
 import { isMuted, loadMutePreference, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
@@ -56,10 +57,18 @@ export function TipTapArcade() {
   const [initials, setInitials] = useState<string | null>(null);
   const [draft, setDraft] = useState("AAA");
   const [boardOpen, setBoardOpen] = useState<string | null>(null);
+  const [booted, setBooted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [paused, setPaused] = useState(false);
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => { setDeviceId(getDeviceId()); setMute(loadMutePreference()); }, []);
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden) { setPaused(true); stopMusic(); } };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
   // Ask once who is signed in. A logged-in player should never be prompted again.
   useEffect(() => { void fetch("/api/session", { cache: "no-store" }).then((r) => r.json()).then(setAccount).catch(() => {}); }, []);
 
@@ -83,7 +92,7 @@ export function TipTapArcade() {
     if (response.ok) { const board = await response.json() as LeaderboardResponse; setBoards((current) => ({ ...current, [game]: board })); }
   }, [deviceId]);
 
-  useEffect(() => { if (!mute) startMusic(games.findIndex((g) => g.slug === activeSlug)); return () => stopMusic(); }, [activeSlug, mute]);
+  useEffect(() => { if (!mute && booted && !paused) startMusic(games.findIndex((g) => g.slug === activeSlug)); return () => stopMusic(); }, [activeSlug, mute, booted, paused]);
   useEffect(() => { void loadBoard(activeSlug); const id = window.setInterval(() => void loadBoard(activeSlug), 8000); return () => clearInterval(id); }, [activeSlug, loadBoard]);
 
   const submit = useCallback(async (game: GameSlug, key: string, data: GameResult) => {
@@ -93,6 +102,15 @@ export function TipTapArcade() {
     await fetch("/api/scores", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ game, score: data.score, durationMs: data.durationMs, roundId: createClientId(), deviceId }) });
     await loadBoard(game);
   }, [deviceId, loadBoard]);
+
+  const jumpTo = (slug: string) => {
+    const index = deck.findIndex((card) => card.slug === slug);
+    const target = index >= 0 ? cards.current.get(deck[index].key) : null;
+    setMenuOpen(false);
+    setBooted(true);
+    setPaused(false);
+    target?.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
+  };
 
   const share = async (slug: GameSlug) => {
     const url = new URL(location.href);
@@ -106,6 +124,10 @@ export function TipTapArcade() {
       <header className="topbar">
         <span className="wordmark">THUMB<b>TRANCE</b></span>
         <div className="top-actions">
+          <button type="button" className="mute" aria-label="Choose a game" onClick={() => setMenuOpen(true)}><GameController weight="fill" /></button>
+          <button type="button" className="mute" aria-label={paused ? "Resume" : "Pause"} onClick={() => setPaused((value) => !value)}>
+            {paused ? <Play weight="fill" /> : <Pause weight="fill" />}
+          </button>
           <button type="button" className="mute" aria-pressed={!mute} aria-label={mute ? "Turn sound on" : "Turn sound off"}
             onClick={() => setMute(setMuted(!isMuted()))}>
             {mute ? <SpeakerSlash weight="fill" /> : <SpeakerHigh weight="fill" />}
@@ -118,7 +140,7 @@ export function TipTapArcade() {
         {deck.map((card, index) => {
           const game = games.find((item) => item.slug === card.slug)!;
           const board = boards[card.slug];
-          const live = index === activeIndex;
+          const live = index === activeIndex && booted && !paused && !menuOpen;
           return (
             <section
               key={card.key}
@@ -214,6 +236,28 @@ export function TipTapArcade() {
           );
         })}
       </div>
+      {!booted && (
+        <Boot
+          muted={mute}
+          onStart={() => { setBooted(true); if (mute) setMute(setMuted(false)); }}
+          onMenu={() => { if (mute) setMute(setMuted(false)); setMenuOpen(true); }}
+          onToggleSound={() => setMute(setMuted(!isMuted()))}
+        />
+      )}
+
+      {menuOpen && (
+        <GameMenu
+          bests={Object.fromEntries(games.map((game) => [game.slug, boards[game.slug].playerBest]))}
+          onPick={jumpTo}
+          onClose={() => setMenuOpen(false)}
+        />
+      )}
+
+      {paused && booted && !menuOpen && (
+        <button type="button" className="paused" onClick={() => setPaused(false)} aria-label="Resume">
+          <span className="paused-card"><Play weight="fill" /> PAUSED — TAP TO RESUME</span>
+        </button>
+      )}
     </main>
   );
 }

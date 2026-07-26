@@ -21,19 +21,19 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Deployed to production at **https://thumbtrance.vercel.app**, auto-deploy on push
 - [x] 27 unit tests; typecheck, lint, build all clean
 - [x] Renamed to Thumbtrance
+- [x] Boot screen with CSS logo — doubles as the audio gate (browsers need a gesture)
+- [x] Retro game-select menu, eight tiles with high scores, jumps straight to a card
+- [x] Pause / resume, including auto-pause when the tab hides
+- [x] Fixed `.world-magenta` — Skyline had no colour world after the accent rename
 
 ## Pending — Claude
 
 | Priority | Task | Notes |
 | --- | --- | --- |
-| 1 | **Intro / boot screen** | Retro power-on, Thumbtrance logo, `PRESS TO PLAY`. First thing a judge sees. |
-| 2 | **Retro game-select menu** | Grid of all eight, high score per tile, jump straight to a card. |
-| 3 | **Pause / resume** | Pause on tap-hold or a corner button; auto-pause when the tab hides. |
-| 4 | **Thumbtrance logo** | Wordmark treatment, favicon, OG image. |
-| 5 | **Rival ghost marker** | "127 to pass NOVA" during play — makes the board matter mid-run. |
-| 6 | Per-game music variation | Currently one pad set with a per-world root; give fast games a pulse. |
-| 7 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
-| 8 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
+| 1 | **Rival ghost marker** | "127 to pass NOVA" during play — makes the board matter mid-run. |
+| 2 | Per-game music variation | Currently one pad set with a per-world root; give fast games a pulse. |
+| 3 | Share / challenge link | Copies a URL today; should deep-link to the game with the score attached. |
+| 4 | **3D game** | Only after everything above. Three.js would be the first new dependency. |
 
 ## Pending — Codex
 

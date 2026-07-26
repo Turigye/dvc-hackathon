@@ -24,6 +24,7 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .card::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(95% 62% at 50% 44%, transparent 52%, rgb(10 6 30 / .32) 100%); }
 
 .world-cobalt { --bg1:#16277F; --bg2:#3A6BFF; --pop:#FFD200; --pop2:#FF4A8D; }
+.world-magenta { --bg1:#7B1370; --bg2:#FF5FC8; --pop:#FFE14D; --pop2:#00E5FF; }
 .world-acid { --bg1:#046B45; --bg2:#25E39A; --pop:#FFF056; --pop2:#FF6B00; }
 .world-electric { --bg1:#0A3D91; --bg2:#26C6FF; --pop:#FFE14D; --pop2:#FF3D9A; }
 .world-ember { --bg1:#9C2A00; --bg2:#FF8A2B; --pop:#FFF0A5; --pop2:#FF2E88; }
@@ -276,3 +277,54 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .sheet-rows li.is-you .rank { color:#0B0F1A; }
 .sheet-rows li.empty { display:block; color:var(--dim); font-size:.62rem; letter-spacing:.14em; text-align:center; padding:18px 0; }
 .sheet-foot { margin:10px 0 0; color:var(--dim); font-size:.58rem; letter-spacing:.14em; text-align:center; }
+
+/* ---- Boot screen: the first thing a judge sees, and the audio gate ---- */
+.boot { position:fixed; inset:0; z-index:20; display:grid; place-items:center; padding:28px;
+  background:radial-gradient(120% 80% at 50% 8%, #3A2DFF 0%, #1B0F5C 45%, #0B0724 100%); animation:boot-in 320ms ease-out; }
+@keyframes boot-in { from { opacity:0; } to { opacity:1; } }
+.boot-scan { position:absolute; inset:0; pointer-events:none; opacity:.35;
+  background:repeating-linear-gradient(180deg, rgb(0 0 0 / .3) 0 1px, transparent 1px 3px); }
+.boot-body { position:relative; display:grid; justify-items:center; gap:0; text-align:center; max-width:420px; width:100%; }
+.boot-kicker { margin:0 0 14px; color:rgb(255 255 255 / .66); font-size:.56rem; letter-spacing:.28em; }
+
+.logo { margin:0; font-family:var(--font-display), sans-serif; font-weight:800; line-height:.84;
+  font-size:clamp(2.9rem, 17vw, 4.6rem); letter-spacing:-.055em; text-transform:uppercase; color:#FFF6E6;
+  text-shadow:5px 5px 0 #FF2E5F, 10px 10px 0 rgb(0 0 0 / .28); }
+.logo span { display:block; }
+.logo-second { color:#FFD200; text-shadow:5px 5px 0 #00C2FF, 10px 10px 0 rgb(0 0 0 / .28); }
+.boot-tag { margin:18px 0 26px; color:rgb(255 255 255 / .8); font-size:.78rem; letter-spacing:.16em; }
+
+.boot-primary { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:58px;
+  border:3px solid #0B0724; border-radius:999px; background:#FFD200; color:#0B0724;
+  font-family:var(--font-display), sans-serif; font-size:1rem; font-weight:800; letter-spacing:.1em;
+  box-shadow:0 6px 0 #C79E00; animation:boot-pulse 2s ease-in-out infinite; }
+.boot-primary:active { transform:translateY(4px); box-shadow:0 2px 0 #C79E00; animation:none; }
+.boot-primary svg { width:20px; height:20px; }
+@keyframes boot-pulse { 50% { transform:scale(1.028); } }
+
+.boot-secondary { display:flex; gap:10px; width:100%; margin-top:12px; }
+.boot-secondary button { display:flex; flex:1; align-items:center; justify-content:center; gap:7px; min-height:44px;
+  border:1.5px solid rgb(255 255 255 / .32); border-radius:999px; color:#FFF6E6; font-size:.6rem; letter-spacing:.1em; }
+.boot-secondary svg { width:15px; height:15px; }
+.boot-hint { margin:14px 0 0; color:rgb(255 255 255 / .45); font-size:.56rem; letter-spacing:.18em; }
+
+/* ---- Game select ---- */
+.menu { position:fixed; inset:0; z-index:21; overflow-y:auto; padding:max(18px, env(safe-area-inset-top)) 16px 26px;
+  background:rgb(11 7 36 / .96); backdrop-filter:blur(18px); animation:boot-in 200ms ease-out; }
+.menu-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.menu-head h2 { margin:0; font-family:var(--font-display), sans-serif; font-size:1.15rem; letter-spacing:.06em; color:#FFF6E6; }
+.menu-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.tile { display:grid; align-content:end; gap:3px; min-height:132px; padding:13px; text-align:left; border:2px solid rgb(255 255 255 / .2); border-radius:14px;
+  background:linear-gradient(150deg, var(--bg2) 0%, var(--bg1) 78%); color:#fff; }
+.tile:active { transform:scale(.97); }
+.tile-name { font-family:var(--font-display), sans-serif; font-size:1.02rem; font-weight:800; letter-spacing:-.02em; }
+.tile-rule { color:rgb(255 255 255 / .74); font-size:.55rem; letter-spacing:.1em; }
+.tile-best { margin-top:5px; color:var(--pop); font-size:.55rem; font-weight:700; letter-spacing:.14em; }
+
+/* ---- Pause ---- */
+.paused { position:fixed; inset:0; z-index:18; display:grid; place-items:center; background:rgb(11 7 36 / .72); backdrop-filter:blur(6px); }
+.paused-card { display:flex; align-items:center; gap:9px; border:2px solid #FFD200; border-radius:999px; padding:14px 22px;
+  background:rgb(11 7 36 / .9); color:#FFD200; font-size:.72rem; font-weight:700; letter-spacing:.14em; }
+.paused-card svg { width:17px; height:17px; }
+
+@media (prefers-reduced-motion:reduce) { .boot-primary { animation:none; } .boot, .menu { animation:none; } }
