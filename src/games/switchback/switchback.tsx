@@ -12,25 +12,6 @@ import { RAIL_OFFSET, centre, railPath, railPoint, ribbonPath } from "./geometry
 const RUNNER_SCREEN_Y = 0.55;
 /** viewBox is 100 wide; height tracks a tall phone so `slice` does not crop the runner. */
 const VIEW_H = 212;
-const KIT = "/assets/games/switchback";
-
-/** Sprites are decoration only. Position and size come from the simulation, never
- *  from image bounds, and nothing renders until the card is active — so an
- *  off-screen card costs no requests. */
-function Sprite({ href, x, y, size, className }: { href: string; x: number; y: number; size: number; className?: string }) {
-  return (
-    <image
-      className={className}
-      href={href}
-      x={x - size / 2}
-      y={y - size / 2}
-      width={size}
-      height={size}
-      preserveAspectRatio="xMidYMid meet"
-      pointerEvents="none"
-    />
-  );
-}
 
 /**
  * Blockout renderer. Flat shapes only — the art pass replaces this layer.
@@ -142,7 +123,6 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           return (
             <g key={hazard.id} className={`hazard is-${hazard.kind}`}>
               <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
-              {active && <Sprite href={`${KIT}/sprite-${hazard.kind}.png`} x={(start.x + end.x) / 2} y={(start.y + end.y) / 2} size={hazard.kind === "spikes" ? 20 : 17} />}
               {hazard.kind === "sweeper" && (() => {
                 const other = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail === 0 ? 1 : 0);
                 const pivot = railPoint(hazard.segment, hazard.switchAt ?? hazard.from, hazard.rail === 0 ? 1 : 0);
@@ -157,7 +137,6 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           return (
             <g key={pickup.id}>
               <circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />
-              {active && <Sprite href={`${KIT}/sprite-${pickup.kind}.png`} x={x} y={y} size={15} />}
             </g>
           );
         })}
@@ -169,13 +148,11 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           return (
             <g>
               <circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />
-              {active && <Sprite className="chaser-art" href={`${KIT}/sprite-chaser.png`} x={spot.x} y={spot.y} size={22} />}
             </g>
           );
         })()}
 
         <circle className={`runner ${state.shield > 0 ? "has-shield" : ""}`} cx={runner.x} cy={runner.y} r={6.5} />
-        {active && <Sprite className="runner-art" href={`${KIT}/sprite-${running ? "runner-lean" : "runner"}.png`} x={runner.x} y={runner.y - 4} size={26} />}
       </svg>
 
       <ul className="key" aria-label="What the shapes mean">

@@ -95,7 +95,6 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
         {decoy !== null && <line className="dial-decoy" x1="50" y1="50" x2="50" y2="16" transform={`rotate(${decoy} 50 50)`} />}
         <line className="dial-hand" x1="50" y1="50" x2="50" y2="12" transform={`rotate(${angle} 50 50)`} />
         <circle className="dial-hub" cx="50" cy="50" r="4" />
-        {active && <image className="dial-art" href="/assets/games/reflex/sprite-clockwork-eye.png" x="28" y="28" width="44" height="44" preserveAspectRatio="xMidYMid meet" pointerEvents="none" />}
       </svg>
       <Bursts bursts={bursts} />
       <div className="prompt">{running ? "TAP ON THE ARC" : "TAP TO START"}</div>

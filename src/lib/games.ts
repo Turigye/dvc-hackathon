@@ -1,4 +1,4 @@
-export const gameSlugs = ["switchback", "skyline", "pulse", "reflex", "overload", "swarm", "slice", "color-rings"] as const;
+export const gameSlugs = ["switchback", "skyline", "pulse", "reflex", "overload", "swarm", "slice"] as const;
 
 export type GameSlug = (typeof gameSlugs)[number];
 
@@ -19,7 +19,6 @@ export const games: GameDefinition[] = [
   { slug: "overload", title: "Overload", kicker: "Hold, then release.", accent: "toxic", description: "Charge control", scoreCap: 6_000 },
   { slug: "swarm", title: "Swarm", kicker: "Tap the swarm.", accent: "violet", description: "Target hunt", scoreCap: 6_000 },
   { slug: "slice", title: "Slice", kicker: "Swipe to cut.", accent: "acid", description: "Blade combos", scoreCap: 9_000 },
-  { slug: "color-rings", title: "Color Rings", kicker: "Spin to match.", accent: "electric", description: "Colour reflex", scoreCap: 3_000 },
 ];
 
 export const isGameSlug = (value: string): value is GameSlug => gameSlugs.includes(value as GameSlug);

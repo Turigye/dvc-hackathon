@@ -158,7 +158,7 @@ function pickKind(state: SwitchbackState, roll: number): HazardKind {
 }
 
 function spawnSegment(state: SwitchbackState, segment: number) {
-  const density = Math.min(0.92, 0.5 + segmentOf(state.progress) / 260);
+  const density = Math.min(0.78, 0.34 + segmentOf(state.progress) / 340);
   if (random(state) > density) return; // Dead air. Intensity needs troughs.
 
   const kind = pickKind(state, random(state));
@@ -166,14 +166,14 @@ function spawnSegment(state: SwitchbackState, segment: number) {
   const id = state.nextId++;
 
   if (kind === "spikes") {
-    const from = 0.18 + random(state) * 0.3;
+    const from = 0.36 + random(state) * 0.2;
     state.hazards.push({ id, kind, segment, rail, from, to: Math.min(0.92, from + 0.26 + random(state) * 0.16) });
   } else if (kind === "sweeper") {
-    const from = 0.22 + random(state) * 0.28;
-    const to = Math.min(0.94, from + 0.34);
+    const from = 0.38 + random(state) * 0.18;
+    const to = Math.min(0.94, from + 0.26);
     state.hazards.push({ id, kind, segment, rail, from, to, switchAt: from + (to - from) / 2 });
   } else {
-    const at = 0.2 + random(state) * 0.58;
+    const at = 0.36 + random(state) * 0.44;
     state.hazards.push({ id, kind, segment, rail, from: at, to: at + 0.09 });
   }
 
@@ -205,14 +205,17 @@ function spawnSegment(state: SwitchbackState, segment: number) {
   }
   // The risky rail past the hazard carries a sprint pad often enough that a
   // player who commits to danger can always out-run the pursuer.
-  if (segment > 2 && hazard.to + 0.3 < 0.95 && random(state) < 0.55) {
-    const from = hazard.to + 0.26;
-    state.drags.push({ id: state.nextId++, kind: "sprint", segment, rail: hazard.rail, from, to: Math.min(0.96, from + 0.2) });
+  // The sprint pad sits on the OPEN rail. Previously it shared the hazard's rail,
+  // so reaching for the reward ran the player straight into the thing that kills
+  // them — the single biggest source of deaths a good player could not avoid.
+  if (segment > 2 && random(state) < 0.55) {
+    const from = 0.06;
+    state.drags.push({ id: state.nextId++, kind: "sprint", segment, rail: other(hazard.rail), from, to: Math.min(0.3, from + 0.2) });
   }
 
   // A second hazard may never close the last open rail at the same point on
   // the segment — it is placed strictly after the first one clears.
-  if (state.score > 40 && random(state) < 0.3) {
+  if (state.score > 80 && random(state) < 0.18) {
     const gapStart = Math.min(0.95, hazard.to + 0.34);
     if (gapStart < 0.82) {
       const at2 = gapStart + random(state) * (0.95 - gapStart);
@@ -355,7 +358,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
 
 /** No hazard may begin before this point on a segment — the runner needs room
  *  to read the fold it just came through. */
-export const MIN_HAZARD_START = 0.15;
+export const MIN_HAZARD_START = 0.34;
 
 /**
  * Fairness audit used by tests: at every sampled point of a segment at least

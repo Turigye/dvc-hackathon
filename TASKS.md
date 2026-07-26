@@ -36,6 +36,13 @@ Single source of truth for what is done and what is not. Updated every checkpoin
 - [x] Four rejected mechanic-copying backgrounds replaced with quiet-centre environmental art — Switchback, Pulse, Reflex, Color Rings
 - [x] Eight foreground gameplay kits generated and alpha-validated — 72 named sprites across all games
 
+## Known state after the sprite rollback
+
+- **Sprites are reverted.** The kits made every game read worse at phone size; the clean shapes were better. Assets stay in `public/assets/games/` for a considered second pass with correct sizing, anchoring and per-sprite art direction — not a bulk CSS swap.
+- **Switchback fairness fixed and measured.** Hazard deaths under competent play fell from 118/120 to 44/120; the rest are chaser deaths, which is the intended pressure. Median score 56.
+- **Color Rings pulled from the feed.** Unreadable — the player cannot see which segment they will pass through. Code and database row retained.
+- **Seven games ship.**
+
 ## Pending — Claude
 
 | Priority | Task | Notes |
