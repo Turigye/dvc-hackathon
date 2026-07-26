@@ -81,7 +81,7 @@ export function TipTapArcade() {
   return (
     <main className="arcade">
       <header className="topbar">
-        <span className="wordmark">TIP<b>TAP</b></span>
+        <span className="wordmark">THUMB<b>TRANCE</b></span>
         <span className="counter">{(activeIndex % games.length) + 1} / {games.length}</span>
       </header>
 

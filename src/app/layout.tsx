@@ -6,8 +6,8 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-disp
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Tip Tap Games — One-thumb arcade",
-  description: "A swipeable, competitive arcade feed.",
+  title: "Thumbtrance — the feed you play",
+  description: "A vertical feed of instantly playable mini-games. Same thumb, same trance — except you are playing.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

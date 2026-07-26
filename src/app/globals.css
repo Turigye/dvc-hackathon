@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Tip Tap Games — vivid per-game colour worlds. Full-bleed vertical feed.
+/* Thumbtrance — vivid per-game colour worlds. Full-bleed vertical feed.
    Each card is its own saturated world; chrome is overlaid, never stacked. */
 :root { --ink:#08070C; --paper:#FFFFFF; --dim:rgb(255 255 255 / .62); --line:rgb(255 255 255 / .18); }
 
