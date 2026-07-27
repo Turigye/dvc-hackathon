@@ -56,7 +56,7 @@ export type SwitchbackState = {
   drags: Drag[];
   spawnedThrough: number;
   nextId: number;
-  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | "chaser" | "drag" | null;
+  event: "near-miss" | "coin" | "shield" | "boost" | "blocked" | "vertex" | "chaser" | "chaser-flip" | "chaser-hit" | "drag" | null;
   eventNonce: number;
   failed: boolean;
   failure: "hazard" | "caught" | null;
@@ -68,6 +68,10 @@ export type SwitchbackState = {
    */
   chaseGap: number;
   chaserActive: boolean;
+  chaserProgress: number;
+  chaserRail: Rail;
+  chaserThinkMs: number;
+  chaserStunMs: number;
 };
 
 export type SwitchbackInput = { flip: boolean };
@@ -82,11 +86,14 @@ export const MIN_TELEGRAPH_MS = 450;
 const NEAR_MISS_WINDOW = 0.12;
 
 /** The pursuer wakes once the player has found their footing. */
-const CHASER_WAKES_AT = 6;
-const CHASER_START_GAP = 1.8;
-const CHASER_MAX_GAP = 2.15;
+const CHASER_WAKES_AT = 8;
+const CHASER_START_GAP = 2.25;
+const CHASER_MAX_GAP = 3.1;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
-const CHASER_CLOSE_BASE = 0.115;
+const CHASER_CLOSE_BASE = 0.045;
+const CHASER_CATCH_DISTANCE = 0.16;
+const CHASER_THINK_MS = 220;
+const CHASER_LOOKAHEAD = 0.13;
 const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
 /** While dragging, you crawl and the pursuer closes far faster. This is the jeopardy. */
 const DRAG_SPEED = 0.6;
@@ -95,15 +102,15 @@ const DRAG_CHASE_MULTIPLIER = 3.4;
 const SPRINT_SPEED = 1.55;
 const SPRINT_CHASE_MULTIPLIER = -2.2;
 
-type Options = Partial<Pick<SwitchbackState, "seed" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "drags">>;
+type Options = Partial<Pick<SwitchbackState, "seed" | "progress" | "score" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "chaserProgress" | "chaserRail" | "chaserThinkMs" | "chaserStunMs" | "drags">>;
 
 export function createSwitchbackState(options: Options = {}): SwitchbackState {
   const state: SwitchbackState = {
     seed: options.seed ?? 1,
-    progress: 0,
+    progress: options.progress ?? 0,
     rail: options.rail ?? 0,
     speed: options.speed ?? BASE_SPEED,
-    score: 0,
+    score: options.score ?? 0,
     combo: 0,
     bestCombo: 0,
     coins: 0,
@@ -121,6 +128,10 @@ export function createSwitchbackState(options: Options = {}): SwitchbackState {
     spawnEnabled: options.spawnEnabled ?? true,
     chaseGap: options.chaseGap ?? CHASER_START_GAP,
     chaserActive: options.chaserActive ?? false,
+    chaserProgress: options.chaserProgress ?? (options.progress ?? 0) - (options.chaseGap ?? CHASER_START_GAP),
+    chaserRail: options.chaserRail ?? (options.rail ?? 0),
+    chaserThinkMs: options.chaserThinkMs ?? 0,
+    chaserStunMs: options.chaserStunMs ?? 0,
   };
   if (state.spawnEnabled && !options.hazards) spawnAhead(state);
   return state;
@@ -236,12 +247,18 @@ function spawnAhead(state: SwitchbackState) {
 /** Risk buys distance from the pursuer. */
 function pushBack(state: SwitchbackState, segments: number) {
   if (!state.chaserActive) return;
-  state.chaseGap = Math.min(CHASER_MAX_GAP, state.chaseGap + segments);
+  state.chaserProgress = Math.max(state.progress - CHASER_MAX_GAP, state.chaserProgress - segments);
+  state.chaseGap = state.progress - state.chaserProgress;
 }
 
 /** How fast the pursuer closes, in segments per second, at the current score. */
 export function chaserCloseRate(score: number) {
-  return CHASER_CLOSE_BASE + Math.min(0.09, score / 1800);
+  return CHASER_CLOSE_BASE + Math.min(0.055, score / 3600);
+}
+
+function chaserDanger(state: SwitchbackState, rail: Rail, progress: number) {
+  const segment = segmentOf(progress); const at = offsetOf(progress);
+  return state.hazards.some((hazard) => hazard.segment === segment && hazardCovers(hazard, rail, at));
 }
 
 function emit(state: SwitchbackState, event: SwitchbackState["event"]) {
@@ -292,6 +309,9 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     if (!state.chaserActive && state.score >= CHASER_WAKES_AT) {
       state.chaserActive = true;
       state.chaseGap = CHASER_START_GAP;
+      state.chaserProgress = state.progress - CHASER_START_GAP;
+      state.chaserRail = state.rail;
+      state.chaserThinkMs = 0;
       emit(state, "chaser");
     }
     const bandNow = state.drags.find((band) => band.segment === segmentOf(state.progress) && band.rail === state.rail
@@ -300,9 +320,35 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     const sprinting = bandNow?.kind === "sprint";
     if (bandNow && state.event !== "drag") emit(state, "drag");
     if (state.chaserActive) {
+      state.chaserThinkMs -= slice;
+      state.chaserStunMs = Math.max(0, state.chaserStunMs - slice);
+      if (state.chaserThinkMs <= 0) {
+        const probe = state.chaserProgress + CHASER_LOOKAHEAD;
+        if (chaserDanger(state, state.chaserRail, probe) && !chaserDanger(state, other(state.chaserRail), probe)) {
+          state.chaserRail = other(state.chaserRail);
+          emit(state, "chaser-flip");
+        }
+        state.chaserThinkMs += CHASER_THINK_MS;
+      }
+      if (state.chaserStunMs <= 0) {
+        const chaserBefore = state.chaserProgress;
+        const chaserBand = state.drags.find((item) => item.segment === segmentOf(chaserBefore) && item.rail === state.chaserRail
+          && offsetOf(chaserBefore) >= item.from && offsetOf(chaserBefore) <= item.to);
+        const chaserPace = chaserBand?.kind === "drag" ? DRAG_SPEED : chaserBand?.kind === "sprint" ? SPRINT_SPEED : 1;
+        state.chaserProgress += ((speed + chaserCloseRate(state.score)) * chaserPace * slice) / 1000;
+        if (segmentOf(state.chaserProgress) !== segmentOf(chaserBefore)) state.chaserRail = other(state.chaserRail);
+        if (chaserDanger(state, state.chaserRail, state.chaserProgress)) {
+          state.chaserStunMs = 720;
+          state.chaserProgress -= 0.24;
+          emit(state, "chaser-hit");
+        }
+      }
+      // Player drag/sprint still changes relative pressure, but far less brutally.
       const pressure = dragging ? DRAG_CHASE_MULTIPLIER : sprinting ? SPRINT_CHASE_MULTIPLIER : 1;
-      state.chaseGap = Math.min(CHASER_MAX_GAP, state.chaseGap - (chaserCloseRate(state.score) * pressure * slice) / 1000);
-      if (state.chaseGap <= 0) {
+      state.chaserProgress += (chaserCloseRate(state.score) * (pressure - 1) * slice) / 1000;
+      state.chaserProgress = Math.max(state.progress - CHASER_MAX_GAP, state.chaserProgress);
+      state.chaseGap = state.progress - state.chaserProgress;
+      if (state.chaseGap <= CHASER_CATCH_DISTANCE) {
         state.failed = true;
         state.failure = "caught";
         state.combo = 0;

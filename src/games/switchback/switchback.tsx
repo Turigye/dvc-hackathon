@@ -59,6 +59,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
   const [state, setState] = useState<SwitchbackState>(() => createSwitchbackState({ seed: 1, spawnEnabled: false }));
   const [running, setRunning] = useState(false);
   const [jump, setJump] = useState<RunnerJump | null>(null);
+  const [chaserJump, setChaserJump] = useState<RunnerJump | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const world = useRef(state);
   const flip = useRef(false);
@@ -88,12 +89,16 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       if (requestedFlip && next.rail !== previousState.rail) {
         setJump({ fromRail: previousState.rail, toRail: next.rail, startProgress: next.progress });
       }
+      if (next.chaserActive && next.chaserRail !== previousState.chaserRail && segmentOf(next.chaserProgress) === segmentOf(previousState.chaserProgress)) {
+        setChaserJump({ fromRail: previousState.chaserRail, toRail: next.chaserRail, startProgress: next.chaserProgress });
+      }
       flip.current = false;
       world.current = next;
       setState(next);
       if (next.event === "near-miss") { play("near"); fire(50, 55, "power"); }
       else if (next.event === "coin" || next.event === "shield") play("pickup");
       else if (next.event === "boost") play("power");
+      else if (next.event === "chaser-hit") { play("near"); fire(50, 68, "power"); }
       if (next.failed) {
         setRunning(false);
         play("fail");
@@ -118,6 +123,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
       const fresh = createSwitchbackState({ seed: (Date.now() % 100000) + 1 });
       world.current = fresh;
       setJump(null);
+      setChaserJump(null);
       started.current = Date.now();
       setState(fresh);
       setRunning(true);
@@ -221,11 +227,11 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         })}
 
         {state.chaserActive && (() => {
-          const trail = Math.max(0, state.progress - state.chaseGap);
-          const spot = railPoint(segmentOf(trail), offsetOf(trail), state.rail);
+          const trail = Math.max(0, state.chaserProgress);
+          const chasePose = runnerPose(trail, state.chaserRail, reducedMotion ? null : chaserJump);
           const close = state.chaseGap < 1.2;
           return (
-            <SvgArt active={active} className="is-chaser" src="/assets/games/switchback/sprite-chaser-v2.png" x={spot.x} y={spot.y} size={17} fallback={<circle className={`chaser ${close ? "is-close" : ""}`} cx={spot.x} cy={spot.y} r={7.5} />} />
+            <SvgArt active={active} className={`is-chaser ${chasePose.jumping ? "is-jumping" : ""} ${state.chaserStunMs > 0 ? "is-stunned" : ""}`} src="/assets/games/switchback/sprite-chaser-v2.png" x={chasePose.x} y={chasePose.y} size={17} imageTransform={`translate(${chasePose.x} ${chasePose.y}) rotate(${chasePose.lean}) scale(${chasePose.facing} 1) translate(${-chasePose.x} ${-chasePose.y})`} fallback={<circle className={`chaser ${close ? "is-close" : ""}`} cx={chasePose.x} cy={chasePose.y} r={7.5} />} />
           );
         })()}
 

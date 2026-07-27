@@ -147,19 +147,20 @@ describe("the pursuer", () => {
   });
 
   test("wakes and then closes on its own", () => {
-    const woken = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 14000);
+    const woken = run(createSwitchbackState({ seed: 3, spawnEnabled: false }), 18000);
     expect(woken.chaserActive).toBe(true);
     expect(woken.failed).toBe(false);
     const later = run(woken, 2000);
     expect(later.chaseGap).toBeLessThan(woken.chaseGap);
   });
 
-  test("closes the full gap in well under half a minute of safe play", () => {
+  test("gives a passive player a meaningful run before catching them", () => {
     let state = createSwitchbackState({ seed: 3, spawnEnabled: false });
     let ms = 0;
     while (!state.failed && ms < 60000) { state = step(state, 16, idle); ms += 16; }
     expect(state.failure).toBe("caught");
-    expect(ms).toBeLessThan(35000);
+    expect(ms).toBeGreaterThan(30000);
+    expect(ms).toBeLessThan(60000);
   });
 
   test("catches a player who never takes a risk", () => {
@@ -184,6 +185,22 @@ describe("the pursuer", () => {
     let state = createSwitchbackState({ seed: 3, spawnEnabled: false, chaserActive: true, chaseGap: 4.2 });
     for (let i = 0; i < 40; i++) state = step(state, 16, idle);
     expect(state.chaseGap).toBeLessThanOrEqual(4.2);
+  });
+
+  test("uses its own flip to avoid a telegraphed obstacle", () => {
+    const hazard: Hazard = { id: 70, kind: "piston", segment: 2, rail: 0, from: .4, to: .49 };
+    const state = createSwitchbackState({ spawnEnabled: false, progress: 4.5, score: 10, chaserActive: true, chaserProgress: 2.3, chaserRail: 0, chaserThinkMs: 0, hazards: [hazard] });
+    const next = step(state, 16, idle);
+    expect(next.chaserRail).toBe(1);
+    expect(next.chaserStunMs).toBe(0);
+  });
+
+  test("a late reaction makes the chaser hit and visibly lose ground", () => {
+    const hazard: Hazard = { id: 71, kind: "piston", segment: 2, rail: 0, from: .26, to: .5 };
+    const state = createSwitchbackState({ spawnEnabled: false, progress: 4.5, score: 10, chaserActive: true, chaserProgress: 2.3, chaserRail: 0, chaserThinkMs: 500, hazards: [hazard] });
+    const next = step(state, 16, idle);
+    expect(next.chaserStunMs).toBeGreaterThan(0);
+    expect(next.chaseGap).toBeGreaterThan(state.chaseGap);
   });
 });
 

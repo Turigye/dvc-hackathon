@@ -96,6 +96,7 @@ export function TipTapArcade() {
   useEffect(() => { if (activeIndex > deck.length - 4) setDeck((current) => [...current, ...buildDeck(2)]); }, [activeIndex, deck.length]);
 
   const activeSlug = deck[activeIndex]?.slug ?? games[0].slug;
+  const activeGame = games.find((game) => game.slug === activeSlug) ?? games[0];
 
   /** The player immediately above you, and what it costs to pass them. */
   const rivalFor = (board: LeaderboardResponse) => {
@@ -191,6 +192,7 @@ export function TipTapArcade() {
                 <div className="title-block">
                   <h2>{game.title}</h2>
                   <p>{game.kicker}</p>
+                  <button type="button" className="rules-chip" onClick={() => setPaused(true)}>RULES</button>
                 </div>
 
                 <aside className="rail">
@@ -293,7 +295,13 @@ export function TipTapArcade() {
 
       {paused && booted && !menuOpen && (
         <button type="button" className="paused" onClick={() => setPaused(false)} aria-label="Resume">
-          <span className="paused-card"><Play weight="fill" /> PAUSED — TAP TO RESUME</span>
+          <span className="paused-card">
+            <b>{activeGame.title}</b>
+            <i><small>ACTION</small>{activeGame.rules.action}</i>
+            <i><small>SCORE</small>{activeGame.rules.score}</i>
+            <i><small>DANGER</small>{activeGame.rules.danger}</i>
+            <em><Play weight="fill" /> TAP TO RESUME</em>
+          </span>
         </button>
       )}
     </main>
