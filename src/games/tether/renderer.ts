@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { ORBIT_RADIUS, anchorPosition, orbitPoint, type Anchor, type TetherState } from "./simulation";
+import { createOrbMaterial, createRingMaterial, createSkyMaterial } from "./materials";
 
 /**
  * TETHER renderer. Owns nothing but pixels — it reads simulation state and draws
@@ -47,8 +48,10 @@ export class TetherRenderer {
   private readonly tether: THREE.Line;
   private readonly trail: THREE.Points;
   private readonly trailPositions: Float32Array;
-  private readonly starsNear: THREE.Points;
-  private readonly starsFar: THREE.Points;
+  private readonly sky: THREE.Mesh;
+  private readonly skyMaterial: THREE.ShaderMaterial;
+  private readonly orbMaterial: THREE.ShaderMaterial;
+  private elapsed = 0;
   private trailHead = 0;
   private cameraY = 0;
   private cameraX = 0;
@@ -72,36 +75,16 @@ export class TetherRenderer {
     this.camera.position.set(0, 0, 9.4);
     this.glow = glowTexture();
 
-    // Two depth layers, both tall enough to cover a very long climb (a strong
-    // run reaches several hundred world units) at a density that actually
-    // reads as a sky rather than a handful of stray dots. The far layer is
-    // bigger, dimmer and parallaxes slower, which is what sells the depth.
-    const field = (count: number, spanX: number, spanY: number, depth: number) => {
-      const positions = new Float32Array(count * 3);
-      for (let i = 0; i < count; i++) {
-        positions[i * 3] = (Math.random() * 2 - 1) * spanX;
-        positions[i * 3 + 1] = Math.random() * spanY - spanY * 0.08;
-        positions[i * 3 + 2] = depth - Math.random() * 6;
-      }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      return geometry;
-    };
+    // A single full-screen quad running a procedural starfield. Replaces two
+    // finite point clouds that ran out partway up a long climb.
+    this.skyMaterial = createSkyMaterial();
+    this.sky = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.skyMaterial);
+    this.sky.frustumCulled = false;
+    this.sky.renderOrder = -1;
+    this.scene.add(this.sky);
 
-    this.starsNear = new THREE.Points(
-      field(1100, 4.2, 2600, -5),
-      new THREE.PointsMaterial({ color: 0xcfc3ff, size: 0.1, map: this.glow, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }),
-    );
-    this.starsFar = new THREE.Points(
-      field(650, 6.5, 2600, -12),
-      new THREE.PointsMaterial({ color: 0x8f7dff, size: 0.16, map: this.glow, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending }),
-    );
-    this.scene.add(this.starsNear, this.starsFar);
-
-    this.orb = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.3, 2),
-      new THREE.MeshBasicMaterial({ color: PALETTE.orb }),
-    );
+    this.orbMaterial = createOrbMaterial();
+    this.orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 3), this.orbMaterial);
     this.scene.add(this.orb);
 
     this.orbHalo = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -132,6 +115,7 @@ export class TetherRenderer {
     this.camera.aspect = width / height;
     // Portrait phones are narrow: widen the field of view so the shaft still fits.
     this.camera.fov = height > width ? 56 : 42;
+    this.skyMaterial.uniforms.uAspect.value = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
   }
 
@@ -182,8 +166,8 @@ export class TetherRenderer {
     if (existing) return existing;
     const group = new THREE.Group();
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(ORBIT_RADIUS, 0.045, 8, 48),
-      new THREE.MeshBasicMaterial({ color: PALETTE.solid, transparent: true, opacity: 0.5 }),
+      new THREE.TorusGeometry(ORBIT_RADIUS, 0.05, 10, 96),
+      createRingMaterial(PALETTE.solid),
     );
     const core = new THREE.Mesh(
       this.coreGeometry(anchor.kind),
@@ -201,6 +185,7 @@ export class TetherRenderer {
   }
 
   render(state: TetherState, dtMs: number) {
+    this.elapsed += dtMs / 1000;
     const live = new Set(state.anchors.map((a) => a.id));
     for (const [id, mesh] of this.anchors) {
       if (live.has(id)) continue;
@@ -220,10 +205,16 @@ export class TetherRenderer {
       const spent = anchor.id < state.anchorId;
       const colour = spent ? PALETTE.spent : anchor.kind === "drift" ? PALETTE.drift : anchor.kind === "decay" ? PALETTE.decay : PALETTE.solid;
       (mesh.core.material as THREE.MeshBasicMaterial).color.setHex(colour);
-      (mesh.ring.material as THREE.MeshBasicMaterial).color.setHex(colour);
       (mesh.halo.material as THREE.SpriteMaterial).color.setHex(colour);
       const isCurrent = anchor.id === state.anchorId;
-      (mesh.ring.material as THREE.MeshBasicMaterial).opacity = isCurrent ? 0.95 : spent ? 0.15 : 0.4;
+      const ringUniforms = (mesh.ring.material as THREE.ShaderMaterial).uniforms;
+      ringUniforms.uTime.value = this.elapsed;
+      ringUniforms.uColour.value.setHex(colour);
+      ringUniforms.uCharge.value = isCurrent ? 1 : spent ? 0.05 : 0.3;
+      // A decay anchor visibly eats itself as its life runs down.
+      ringUniforms.uDissolve.value = anchor.kind === "decay" && isCurrent
+        ? 1 - Math.max(0, Math.min(1, (anchor.life ?? 1.5) / 1.5))
+        : 0;
       mesh.halo.material.opacity = isCurrent ? 0.8 : spent ? 0.05 : 0.25;
       // A decaying pad visibly winds down, so the launch is never a surprise.
       const urgency = anchor.kind === "decay" && isCurrent ? Math.max(0.2, (anchor.life ?? 1.5) / 1.5) : 1;
@@ -245,6 +236,8 @@ export class TetherRenderer {
     this.orbHalo.position.copy(this.orb.position);
     const heat = 1 + state.combo * 0.12;
     this.orbHalo.scale.setScalar(Math.min(3.4, 2.1 * heat));
+    this.orbMaterial.uniforms.uTime.value = this.elapsed;
+    this.orbMaterial.uniforms.uHeat.value = Math.min(2.5, state.combo * 0.35);
 
     const anchor = state.anchors.find((a) => a.id === state.anchorId);
     const tetherVisible = state.phase === "orbiting" && Boolean(anchor);
@@ -293,8 +286,7 @@ export class TetherRenderer {
       9.4,
     );
     this.camera.lookAt(this.cameraX, this.cameraY - 0.4, 0);
-    this.starsNear.position.y = this.cameraY * 0.72;
-    this.starsFar.position.y = this.cameraY * 0.4;
+    this.skyMaterial.uniforms.uScroll.value = this.cameraY * 0.06;
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -312,10 +304,8 @@ export class TetherRenderer {
     (this.tether.material as THREE.Material).dispose();
     this.trail.geometry.dispose();
     (this.trail.material as THREE.Material).dispose();
-    this.starsNear.geometry.dispose();
-    (this.starsNear.material as THREE.Material).dispose();
-    this.starsFar.geometry.dispose();
-    (this.starsFar.material as THREE.Material).dispose();
+    this.sky.geometry.dispose();
+    this.skyMaterial.dispose();
     this.glow.dispose();
     this.renderer.dispose();
   }
