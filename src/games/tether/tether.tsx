@@ -5,6 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createTetherState, step, type TetherState } from "./simulation";
 import { isMuted, loadMutePreference, play, setMuted } from "@/lib/audio";
 
+const scoreFormat = new Intl.NumberFormat("en-US");
+/** A long run can reach five figures. Shrink the readout by digit count rather
+ *  than letting it overflow the card or wrap. */
+const scoreScale = (score: number) => Math.max(0.46, 1 - Math.max(0, String(score).length - 3) * 0.15);
+
 /**
  * TETHER — Three.js portrait arcade game.
  *
@@ -130,8 +135,8 @@ export function Tether({ active = true }: { active?: boolean }) {
       </button>
 
       <div className="tether-hud" aria-live="off" aria-hidden="true">
-        <span className="tether-score">{hud.score}</span>
-        <span className="tether-sub">{hud.height} M · BEST {best}</span>
+        <span className="tether-score" style={{ transform: `scale(${scoreScale(hud.score)})` }}>{scoreFormat.format(hud.score)}</span>
+        <span className="tether-sub">{hud.height} M · BEST {scoreFormat.format(best)}</span>
         {hud.combo > 1 && <span className="tether-combo">PERFECT ×{hud.combo}</span>}
       </div>
 
@@ -145,7 +150,7 @@ export function Tether({ active = true }: { active?: boolean }) {
       {hud.failed && (
         <div className="tether-over">
           <span>YOU FELL</span>
-          <strong>{hud.score}</strong>
+          <strong style={{ transform: `scale(${scoreScale(hud.score)})` }}>{scoreFormat.format(hud.score)}</strong>
           <em>{hud.height} M CLIMBED</em>
           <button type="button" onPointerDown={(event) => { event.stopPropagation(); if (performance.now() - diedAt.current > 650) reset(); }}>GO AGAIN</button>
         </div>

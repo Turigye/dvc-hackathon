@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ORBIT_RADIUS, anchorPosition, orbitPoint, type TetherState } from "./simulation";
+import { ORBIT_RADIUS, anchorPosition, orbitPoint, type Anchor, type TetherState } from "./simulation";
 
 /**
  * TETHER renderer. Owns nothing but pixels — it reads simulation state and draws
@@ -47,11 +47,18 @@ export class TetherRenderer {
   private readonly tether: THREE.Line;
   private readonly trail: THREE.Points;
   private readonly trailPositions: Float32Array;
-  private readonly stars: THREE.Points;
+  private readonly starsNear: THREE.Points;
+  private readonly starsFar: THREE.Points;
   private trailHead = 0;
   private cameraY = 0;
   private cameraX = 0;
   private shake = 0;
+  /** Smoothed orb draw position. A latch relocates the orb by up to the
+   *  capture tolerance in one physics step (arriving near, not exactly on,
+   *  the orbit ring) — that is a real position discontinuity, unlike ordinary
+   *  flight or orbit motion which is already continuous. Easing the drawn
+   *  position removes the pop without touching the physics it is drawn from. */
+  private orbRenderPos: { x: number; y: number } | null = null;
   private readonly reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -65,19 +72,31 @@ export class TetherRenderer {
     this.camera.position.set(0, 0, 9.4);
     this.glow = glowTexture();
 
-    const starCount = 220;
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      starPositions[i * 3] = (Math.random() * 2 - 1) * 14;
-      starPositions[i * 3 + 1] = Math.random() * 120 - 10;
-      starPositions[i * 3 + 2] = -6 - Math.random() * 12;
-    }
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-    this.stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({
-      color: 0x8f7dff, size: 0.09, map: this.glow, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    }));
-    this.scene.add(this.stars);
+    // Two depth layers, both tall enough to cover a very long climb (a strong
+    // run reaches several hundred world units) at a density that actually
+    // reads as a sky rather than a handful of stray dots. The far layer is
+    // bigger, dimmer and parallaxes slower, which is what sells the depth.
+    const field = (count: number, spanX: number, spanY: number, depth: number) => {
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() * 2 - 1) * spanX;
+        positions[i * 3 + 1] = Math.random() * spanY - spanY * 0.08;
+        positions[i * 3 + 2] = depth - Math.random() * 6;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      return geometry;
+    };
+
+    this.starsNear = new THREE.Points(
+      field(1100, 4.2, 2600, -5),
+      new THREE.PointsMaterial({ color: 0xcfc3ff, size: 0.1, map: this.glow, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }),
+    );
+    this.starsFar = new THREE.Points(
+      field(650, 6.5, 2600, -12),
+      new THREE.PointsMaterial({ color: 0x8f7dff, size: 0.16, map: this.glow, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending }),
+    );
+    this.scene.add(this.starsNear, this.starsFar);
 
     this.orb = new THREE.Mesh(
       new THREE.IcosahedronGeometry(0.3, 2),
@@ -122,6 +141,7 @@ export class TetherRenderer {
     this.cameraY = 0;
     this.cameraX = 0;
     this.shake = 0;
+    this.orbRenderPos = null;
     this.trailPositions.fill(-999);
     (this.trail.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     for (const [id, mesh] of this.anchors) {
@@ -140,8 +160,25 @@ export class TetherRenderer {
     this.shake = Math.min(1, this.shake + strength);
   }
 
-  private anchorMesh(id: number): AnchorMesh {
-    const existing = this.anchors.get(id);
+  /**
+   * Anchor kinds must read apart by silhouette, not only colour — solid,
+   * drift and decay used to share one octahedron and differ by hex alone,
+   * which fails for colour-blind players and, now that drift/decay actually
+   * spawn (they never did before a generator bug was fixed), is a real gap
+   * rather than a theoretical one.
+   *
+   * solid = octahedron, a stable diamond.
+   * drift = a flattened wide slab, hinting at the sideways glide.
+   * decay = a spiky low-poly tetrahedron, reading as fragile before it even moves.
+   */
+  private coreGeometry(kind: Anchor["kind"]) {
+    if (kind === "drift") return new THREE.BoxGeometry(0.44, 0.16, 0.3);
+    if (kind === "decay") return new THREE.TetrahedronGeometry(0.3, 0);
+    return new THREE.OctahedronGeometry(0.26, 0);
+  }
+
+  private anchorMesh(anchor: Anchor): AnchorMesh {
+    const existing = this.anchors.get(anchor.id);
     if (existing) return existing;
     const group = new THREE.Group();
     const ring = new THREE.Mesh(
@@ -149,7 +186,7 @@ export class TetherRenderer {
       new THREE.MeshBasicMaterial({ color: PALETTE.solid, transparent: true, opacity: 0.5 }),
     );
     const core = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.26, 0),
+      this.coreGeometry(anchor.kind),
       new THREE.MeshBasicMaterial({ color: PALETTE.solid }),
     );
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -159,7 +196,7 @@ export class TetherRenderer {
     group.add(ring, core, halo);
     this.scene.add(group);
     const mesh = { group, ring, core, halo };
-    this.anchors.set(id, mesh);
+    this.anchors.set(anchor.id, mesh);
     return mesh;
   }
 
@@ -177,7 +214,7 @@ export class TetherRenderer {
     }
 
     for (const anchor of state.anchors) {
-      const mesh = this.anchorMesh(anchor.id);
+      const mesh = this.anchorMesh(anchor);
       const at = anchorPosition(anchor, state.elapsedMs);
       mesh.group.position.set(at.x, at.y, anchor.z);
       const spent = anchor.id < state.anchorId;
@@ -196,7 +233,13 @@ export class TetherRenderer {
     }
 
     const pos = state.phase === "orbiting" ? orbitPoint(state) : state.pos;
-    this.orb.position.set(pos.x, pos.y, 0.2);
+    if (!this.orbRenderPos) this.orbRenderPos = { x: pos.x, y: pos.y };
+    else {
+      const drawEase = Math.min(1, dtMs / 70);
+      this.orbRenderPos.x += (pos.x - this.orbRenderPos.x) * drawEase;
+      this.orbRenderPos.y += (pos.y - this.orbRenderPos.y) * drawEase;
+    }
+    this.orb.position.set(this.orbRenderPos.x, this.orbRenderPos.y, 0.2);
     this.orb.rotation.x += dtMs * 0.005;
     this.orb.rotation.y += dtMs * 0.004;
     this.orbHalo.position.copy(this.orb.position);
@@ -210,12 +253,14 @@ export class TetherRenderer {
       const at = anchorPosition(anchor, state.elapsedMs);
       const points = this.tether.geometry.attributes.position as THREE.BufferAttribute;
       points.setXYZ(0, at.x, at.y, anchor.z);
-      points.setXYZ(1, pos.x, pos.y, 0.2);
+      points.setXYZ(1, this.orbRenderPos.x, this.orbRenderPos.y, 0.2);
       points.needsUpdate = true;
     }
 
-    this.trailPositions[this.trailHead * 3] = pos.x;
-    this.trailPositions[this.trailHead * 3 + 1] = pos.y;
+    // Trail and tether both read the smoothed draw position, not the raw
+    // physics position, so nothing visibly detaches from the ball on a latch.
+    this.trailPositions[this.trailHead * 3] = this.orbRenderPos.x;
+    this.trailPositions[this.trailHead * 3 + 1] = this.orbRenderPos.y;
     this.trailPositions[this.trailHead * 3 + 2] = 0.1;
     this.trailHead = (this.trailHead + 1) % (this.trailPositions.length / 3);
     (this.trail.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
@@ -248,7 +293,8 @@ export class TetherRenderer {
       9.4,
     );
     this.camera.lookAt(this.cameraX, this.cameraY - 0.4, 0);
-    this.stars.position.y = this.cameraY * 0.72;
+    this.starsNear.position.y = this.cameraY * 0.72;
+    this.starsFar.position.y = this.cameraY * 0.4;
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -266,8 +312,10 @@ export class TetherRenderer {
     (this.tether.material as THREE.Material).dispose();
     this.trail.geometry.dispose();
     (this.trail.material as THREE.Material).dispose();
-    this.stars.geometry.dispose();
-    (this.stars.material as THREE.Material).dispose();
+    this.starsNear.geometry.dispose();
+    (this.starsNear.material as THREE.Material).dispose();
+    this.starsFar.geometry.dispose();
+    (this.starsFar.material as THREE.Material).dispose();
     this.glow.dispose();
     this.renderer.dispose();
   }
