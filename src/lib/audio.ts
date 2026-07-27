@@ -69,6 +69,19 @@ export function setMuted(next: boolean) {
   return muted;
 }
 
+/** Explicit first-gesture unlock. Returns only after mobile Safari/Chrome has
+ * resumed the context, then proves the bus with a quiet startup cue. */
+export async function enableAudio() {
+  setMuted(false);
+  const ctx = ensureContext();
+  if (!ctx || !master) return false;
+  if (ctx.state !== "running") await ctx.resume();
+  master.gain.cancelScheduledValues(ctx.currentTime);
+  master.gain.setValueAtTime(MASTER_LEVEL, ctx.currentTime);
+  play("best");
+  return ctx.state === "running";
+}
+
 function ensureContext() {
   if (context || typeof window === "undefined") return context;
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;

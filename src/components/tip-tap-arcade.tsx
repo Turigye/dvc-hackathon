@@ -5,7 +5,7 @@ import { ArrowDown, GameController, GoogleLogo, Pause, Play, Ranking, ShareNetwo
 import { Boot, GameMenu } from "@/components/boot";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClientId } from "@/lib/client-id";
-import { isMuted, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
+import { enableAudio, isMuted, setMuted, silence, startMusic, stopMusic } from "@/lib/audio";
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
@@ -276,7 +276,7 @@ export function TipTapArcade() {
       {!booted && (
         <Boot
           muted={mute}
-          onStart={() => { setMute(setMuted(false)); setBooted(true); }}
+          onStart={() => { void enableAudio(); setMute(false); setBooted(true); }}
           onMenu={() => setMenuOpen(true)}
           onToggleSound={() => setMute(setMuted(!isMuted()))}
           signedIn={account.signedIn}
