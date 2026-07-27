@@ -11,7 +11,7 @@
 
 export type Rail = 0 | 1;
 export type HazardKind = "piston" | "spikes" | "sweeper";
-export type PickupKind = "coin" | "shield" | "boost";
+export type PickupKind = "coin" | "shield";
 
 /** A non-lethal slow band. Running through it drags you and lets the pursuer gain. */
 export type Band = { id: number; kind: "drag" | "sprint"; segment: number; rail: Rail; from: number; to: number };
@@ -72,6 +72,8 @@ export type SwitchbackState = {
   chaserRail: Rail;
   chaserThinkMs: number;
   chaserStunMs: number;
+  /** The chaser banks a sustained boost from sprint pads exactly as the player does. */
+  chaserBoostMs: number;
 };
 
 export type SwitchbackInput = { flip: boolean };
@@ -90,7 +92,7 @@ const CHASER_WAKES_AT = 8;
 const CHASER_START_GAP = 1.75;
 const CHASER_MAX_GAP = 3.1;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
-const CHASER_CLOSE_BASE = 0.0495;
+const CHASER_CLOSE_BASE = 0.075;
 const CHASER_CATCH_DISTANCE = 0.16;
 const CHASER_THINK_MS = 220;
 const CHASER_LOOKAHEAD = 0.13;
@@ -99,10 +101,12 @@ const PUSHBACK = { "near-miss": 0.3, coin: 0.18, boost: 0.62 } as const;
 const DRAG_SPEED = 0.6;
 const DRAG_CHASE_MULTIPLIER = 3.4;
 /** Sprint pads are the counterweight: escape has to be reachable, not theoretical. */
-const SPRINT_SPEED = 1.55;
+const SPRINT_SPEED = 1.18;
+/** Touching a sprint pad grants a sustained boost rather than a flicker of speed. */
+const SPRINT_BOOST_MS = 2600;
 const SPRINT_CHASE_MULTIPLIER = -2.2;
 
-type Options = Partial<Pick<SwitchbackState, "seed" | "progress" | "score" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "chaserProgress" | "chaserRail" | "chaserThinkMs" | "chaserStunMs" | "drags">>;
+type Options = Partial<Pick<SwitchbackState, "seed" | "progress" | "score" | "rail" | "speed" | "hazards" | "pickups" | "spawnEnabled" | "shield" | "chaseGap" | "chaserActive" | "chaserProgress" | "chaserRail" | "chaserThinkMs" | "chaserStunMs" | "chaserBoostMs" | "drags">>;
 
 export function createSwitchbackState(options: Options = {}): SwitchbackState {
   const state: SwitchbackState = {
@@ -132,6 +136,7 @@ export function createSwitchbackState(options: Options = {}): SwitchbackState {
     chaserRail: options.chaserRail ?? (options.rail ?? 0),
     chaserThinkMs: options.chaserThinkMs ?? 0,
     chaserStunMs: options.chaserStunMs ?? 0,
+    chaserBoostMs: options.chaserBoostMs ?? 0,
   };
   if (state.spawnEnabled && !options.hazards) spawnAhead(state);
   return state;
@@ -191,7 +196,7 @@ function spawnSegment(state: SwitchbackState, segment: number) {
   // Rewards sit where the risk is: same rail as the hazard, just past it.
   const hazard = state.hazards[state.hazards.length - 1];
   const roll = random(state);
-  const kindPick: PickupKind = roll < 0.14 ? "shield" : roll < 0.26 ? "boost" : "coin";
+  const kindPick: PickupKind = roll < 0.18 ? "shield" : "coin";
   // The reward sits on the risky rail, but far enough past the hazard that the
   // player can flip back onto it. Below ~0.16 the dodge and the pickup are the
   // same instant and the reward is unreachable by construction.
@@ -253,7 +258,7 @@ function pushBack(state: SwitchbackState, segments: number) {
 
 /** How fast the pursuer closes, in segments per second, at the current score. */
 export function chaserCloseRate(score: number) {
-  return CHASER_CLOSE_BASE + Math.min(0.0605, score / 3600);
+  return CHASER_CLOSE_BASE + Math.min(0.085, score / 2600);
 }
 
 function chaserDanger(state: SwitchbackState, rail: Rail, progress: number) {
@@ -312,6 +317,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       state.chaserProgress = state.progress - CHASER_START_GAP;
       state.chaserRail = state.rail;
       state.chaserThinkMs = 0;
+      state.chaserBoostMs = 0;
       emit(state, "chaser");
     }
     const bandNow = state.drags.find((band) => band.segment === segmentOf(state.progress) && band.rail === state.rail
@@ -319,6 +325,13 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
     const dragging = bandNow?.kind === "drag";
     const sprinting = bandNow?.kind === "sprint";
     if (bandNow && state.event !== "drag") emit(state, "drag");
+    // Running onto a sprint pad arms the sustained boost. Previously the pad gave
+    // a weak instant multiplier while a separate pickup gave the good long one —
+    // two boosts doing different things. Now there is one.
+    if (sprinting && state.boostMs < SPRINT_BOOST_MS * 0.5) {
+      state.boostMs = SPRINT_BOOST_MS;
+      emit(state, "boost");
+    }
     if (state.chaserActive) {
       state.chaserThinkMs -= slice;
       state.chaserStunMs = Math.max(0, state.chaserStunMs - slice);
@@ -334,8 +347,19 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
         const chaserBefore = state.chaserProgress;
         const chaserBand = state.drags.find((item) => item.segment === segmentOf(chaserBefore) && item.rail === state.chaserRail
           && offsetOf(chaserBefore) >= item.from && offsetOf(chaserBefore) <= item.to);
-        const chaserPace = chaserBand?.kind === "drag" ? DRAG_SPEED : chaserBand?.kind === "sprint" ? SPRINT_SPEED : 1;
-        state.chaserProgress += ((speed + chaserCloseRate(state.score)) * chaserPace * slice) / 1000;
+        const chaserPace = chaserBand?.kind === "drag" ? DRAG_SPEED : 1;
+        // The chaser runs at the player's own speed and is subject to the same
+        // bands. It used to get chaserCloseRate ADDED here and applied AGAIN as
+        // "pressure" below — gaining twice from one rule. Closing pressure is now
+        // applied in exactly one place.
+        // Same rule as the player: crossing a pad arms a sustained boost rather
+        // than only helping while stood on it.
+        if (chaserBand?.kind === "sprint" && state.chaserBoostMs < SPRINT_BOOST_MS * 0.5) {
+          state.chaserBoostMs = SPRINT_BOOST_MS;
+        }
+        state.chaserBoostMs = Math.max(0, state.chaserBoostMs - slice);
+        const chaserBoost = state.chaserBoostMs > 0 ? BOOST_MULTIPLIER : 1;
+        state.chaserProgress += (speed * chaserPace * chaserBoost * slice) / 1000;
         if (segmentOf(state.chaserProgress) !== segmentOf(chaserBefore)) state.chaserRail = other(state.chaserRail);
         if (chaserDanger(state, state.chaserRail, state.chaserProgress)) {
           state.chaserStunMs = 720;
@@ -345,7 +369,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       }
       // Player drag/sprint still changes relative pressure, but far less brutally.
       const pressure = dragging ? DRAG_CHASE_MULTIPLIER : sprinting ? SPRINT_CHASE_MULTIPLIER : 1;
-      state.chaserProgress += (chaserCloseRate(state.score) * (pressure - 1) * slice) / 1000;
+      state.chaserProgress += (chaserCloseRate(state.score) * pressure * slice) / 1000;
       state.chaserProgress = Math.max(state.progress - CHASER_MAX_GAP, state.chaserProgress);
       state.chaseGap = state.progress - state.chaserProgress;
       if (state.chaseGap <= CHASER_CATCH_DISTANCE) {
@@ -391,7 +415,7 @@ export function step(previous: SwitchbackState, dtMs: number, input: SwitchbackI
       pickup.taken = true;
       if (pickup.kind === "coin") { state.coins += 1; state.score += 5; pushBack(state, PUSHBACK.coin); emit(state, "coin"); }
       if (pickup.kind === "shield") { state.shield = Math.min(3, state.shield + 1); emit(state, "shield"); }
-      if (pickup.kind === "boost") { state.boostMs = 2600; pushBack(state, PUSHBACK.boost); emit(state, "boost"); }
+      
     }
   }
 

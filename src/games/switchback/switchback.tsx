@@ -200,6 +200,13 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
           const start = railPoint(hazard.segment, hazard.from, hazard.rail);
           const end = railPoint(hazard.segment, Math.min(1, hazard.to), hazard.rail);
           const art = railPoint(hazard.segment, (hazard.from + Math.min(1, hazard.to)) / 2, hazard.rail);
+          // The sprite is sized to the hazard's REAL lethal extent. It used to be
+          // a fixed 24 units while a piston only kills across ~5 — so the art was
+          // roughly five times wider than its hitbox, which is why contact felt
+          // random: you could overlap the picture and live, or die with daylight
+          // showing. Art and hitbox are now the same object.
+          const lethalLength = Math.hypot(end.x - start.x, end.y - start.y);
+          const artSize = Math.max(10, lethalLength);
           return (
             <SvgArt
               key={hazard.id}
@@ -209,7 +216,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
               src={`/assets/games/switchback/sprite-${hazard.kind}-v2.png`}
               x={art.x}
               y={art.y}
-              size={hazard.kind === "sweeper" ? 28 : hazard.kind === "piston" ? 24 : 22}
+              size={artSize}
               fallback={<>
                 <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} strokeWidth={hazard.kind === "spikes" ? 7 : 10} strokeLinecap={hazard.kind === "piston" ? "butt" : "round"} />
                 {hazard.kind === "sweeper" && (() => {
@@ -225,7 +232,7 @@ export function Switchback({ active, onFinish, onRunningChange }: GameProps) {
         {state.pickups.filter((pickup) => !pickup.taken).map((pickup) => {
           const { x, y } = railPoint(pickup.segment, pickup.at, pickup.rail);
           return (
-            <SvgArt key={pickup.id} active={active} className={`is-${pickup.kind}`} src={`/assets/games/switchback/sprite-${pickup.kind}-v2.png`} x={x} y={y} size={12} fallback={<circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />} />
+            <SvgArt key={pickup.id} active={active} className={`is-${pickup.kind}`} src={`/assets/games/switchback/sprite-${pickup.kind}-v2.png`} x={x} y={y} size={11} fallback={<circle className={`pickup is-${pickup.kind}`} cx={x} cy={y} r={5} />} />
           );
         })}
 
