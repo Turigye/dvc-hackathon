@@ -58,6 +58,19 @@ export function Reflex({ active, onFinish, onRunningChange }: GameProps) {
       setAngle(0); setTarget(90); setArc(START_ARC); setScore(0); setStreak(0); setFlash(null); setDecoy(null); setRunning(true);
       return;
     }
+    // Past the speed/arc caps the decoy becomes a real hazard rather than
+    // decoration: tapping while it sits on the arc ends the run. This is the
+    // one axis that keeps escalating after everything else has bottomed out.
+    if (w.streak >= 6) {
+      const decoyDelta = Math.abs(((w.decoy - w.target + 540) % 360) - 180);
+      if (decoyDelta <= w.arc / 2) {
+        setRunning(false);
+        play("fail");
+        setFlash("miss");
+        finish.current({ score: w.score, durationMs: Math.max(1000, Date.now() - w.start), label: "HIT THE DECOY" });
+        return;
+      }
+    }
     const delta = Math.abs(((w.angle - w.target + 540) % 360) - 180);
     const hit = delta <= w.arc / 2;
     if (!hit) {

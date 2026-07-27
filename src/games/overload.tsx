@@ -25,7 +25,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [state, setState] = useState<"idle" | "charging" | "blown">("idle");
-  const world = useRef({ charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: 0 });
+  const world = useRef({ charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: 0, drift: 0, base: 62 });
   const holding = useRef(false);
   const { bursts, fire } = useBursts();
   const finish = useRef(onFinish);
@@ -40,6 +40,14 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
       const dt = Math.min(64, now - previous) / 1000;
       previous = now;
       const w = world.current;
+      // Uncapped difficulty axis. Rate and band both bottom out around release
+      // 13, after which the game used to be identical forever; the band now
+      // sways faster the longer the streak runs, so precision keeps mattering.
+      if (w.streak > 4) {
+        w.drift += dt * (0.7 + w.streak * 0.09);
+        w.at = w.base + Math.sin(w.drift) * Math.min(16, (w.streak - 4) * 1.5);
+        setBand({ at: w.at, width: w.width });
+      }
       if (holding.current) w.charge += w.rate * dt;
       else w.charge = Math.max(0, w.charge - w.rate * 1.6 * dt);
       if (w.charge > 100) {
@@ -60,7 +68,7 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
     if (!active) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     if (state !== "charging") {
-      world.current = { charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: Date.now() };
+      world.current = { charge: 0, rate: 46, at: 62, width: START_BAND, score: 0, streak: 0, start: Date.now(), drift: 0, base: 62 };
       setCharge(0); setBand({ at: 62, width: START_BAND }); setScore(0); setStreak(0); setState("charging");
     }
     holding.current = true;
@@ -103,7 +111,8 @@ export function Overload({ active, onFinish, onRunningChange }: GameProps) {
     w.score += Math.round(10 + accuracy * 20) * Math.min(4, w.streak);
     w.width = Math.max(MIN_BAND, w.width - 2);
     w.rate = Math.min(120, w.rate + 6);
-    w.at = 34 + Math.random() * 52;
+    w.base = 34 + Math.random() * 52;
+    w.at = w.base;
     w.charge = 0;
     setScore(w.score); setStreak(w.streak); setBand({ at: w.at, width: w.width }); setCharge(0);
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(10);
