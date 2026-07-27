@@ -27,3 +27,8 @@
 .tether-over button:active { transform:translateY(2px); }
 
 @media (prefers-reduced-motion:reduce) { .tether-coach-ring, .tether-combo, .tether-over { animation:none; } }
+
+.tether-mute { position:absolute; top:calc(16px + env(safe-area-inset-top)); right:16px; z-index:3;
+  border:1.5px solid rgba(255,255,255,.28); border-radius:999px; padding:8px 14px; background:rgba(5,3,15,.6);
+  color:rgba(255,255,255,.75); font-family:var(--font-mono), monospace; font-size:.55rem; letter-spacing:.16em; }
+.tether-mute[aria-pressed="true"] { border-color:#7cf9ff; color:#7cf9ff; }

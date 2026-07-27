@@ -51,6 +51,7 @@ export class TetherRenderer {
   private trailHead = 0;
   private cameraY = 0;
   private shake = 0;
+  private readonly reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" });
@@ -106,6 +107,7 @@ export class TetherRenderer {
   }
 
   resize(width: number, height: number) {
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     // Portrait phones are narrow: widen the field of view so the shaft still fits.
@@ -113,7 +115,26 @@ export class TetherRenderer {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Returns the view to the origin for a fresh run. Without this the camera
+   *  stayed parked at the previous run's height and the new orb spawned off-screen. */
+  reset() {
+    this.cameraY = 0;
+    this.shake = 0;
+    this.trailPositions.fill(-999);
+    (this.trail.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    for (const [id, mesh] of this.anchors) {
+      this.scene.remove(mesh.group);
+      mesh.ring.geometry.dispose();
+      mesh.core.geometry.dispose();
+      (mesh.ring.material as THREE.Material).dispose();
+      (mesh.core.material as THREE.Material).dispose();
+      mesh.halo.material.dispose();
+      this.anchors.delete(id);
+    }
+  }
+
   punch(strength = 1) {
+    if (this.reducedMotion) return;
     this.shake = Math.min(1, this.shake + strength);
   }
 
@@ -147,6 +168,9 @@ export class TetherRenderer {
       this.scene.remove(mesh.group);
       mesh.ring.geometry.dispose();
       mesh.core.geometry.dispose();
+      (mesh.ring.material as THREE.Material).dispose();
+      (mesh.core.material as THREE.Material).dispose();
+      mesh.halo.material.dispose();
       this.anchors.delete(id);
     }
 
@@ -167,7 +191,6 @@ export class TetherRenderer {
       mesh.group.scale.setScalar(isCurrent ? 1 + (1 - urgency) * 0.25 : 1);
       mesh.core.rotation.y += dtMs * (isCurrent ? 0.004 : 0.0012);
       mesh.core.rotation.x += dtMs * 0.0008;
-      mesh.ring.rotation.z = state.angle * (isCurrent ? 1 : 0.2);
     }
 
     const pos = state.phase === "orbiting" ? orbitPoint(state) : state.pos;
@@ -202,11 +225,11 @@ export class TetherRenderer {
     this.shake = Math.max(0, this.shake - dtMs / 260);
     const jolt = this.shake * this.shake * 0.22;
     this.camera.position.set(
-      pos.x * 0.14 + (Math.random() - 0.5) * jolt,
-      this.cameraY + (Math.random() - 0.5) * jolt,
+      pos.x * 0.62 + (jolt > 0 ? (Math.random() - 0.5) * jolt : 0),
+      this.cameraY + (jolt > 0 ? (Math.random() - 0.5) * jolt : 0),
       9.4,
     );
-    this.camera.lookAt(pos.x * 0.14, this.cameraY - 0.4, 0);
+    this.camera.lookAt(pos.x * 0.62, this.cameraY - 0.4, 0);
     this.stars.position.y = this.cameraY * 0.72;
 
     this.renderer.render(this.scene, this.camera);
@@ -219,6 +242,14 @@ export class TetherRenderer {
     });
     this.anchors.clear();
     this.orb.geometry.dispose();
+    (this.orb.material as THREE.Material).dispose();
+    this.orbHalo.material.dispose();
+    this.tether.geometry.dispose();
+    (this.tether.material as THREE.Material).dispose();
+    this.trail.geometry.dispose();
+    (this.trail.material as THREE.Material).dispose();
+    this.stars.geometry.dispose();
+    (this.stars.material as THREE.Material).dispose();
     this.glow.dispose();
     this.renderer.dispose();
   }

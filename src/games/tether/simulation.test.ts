@@ -7,6 +7,8 @@ import {
   orbitPoint,
   step,
   tangent,
+  captureTolerance,
+  gapDistance,
   type TetherState,
 } from "./simulation";
 
@@ -85,18 +87,43 @@ describe("fairness", () => {
     expect(best).toBeGreaterThan(150);
   });
 
-  test("releasing blindly and constantly does not climb", () => {
-    let state = createTetherState(7);
-    for (let t = 0; t < 20000 && !state.failed; t += 16) state = step(state, 16, { release: true });
-    expect(state.score).toBeLessThan(120);
+  test("mashing release always ends the run quickly", () => {
+    let deaths = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      let state = createTetherState(seed);
+      for (let t = 0; t < 30000 && !state.failed; t += 16) state = step(state, 16, { release: true });
+      if (state.failed) deaths += 1;
+    }
+    expect(deaths).toBe(40);
   });
 });
 
 describe("scoring", () => {
-  test("a clean latch scores more than a scraped one", () => {
-    const clean = 10 + 10 + 15;
-    const scraped = 10;
-    expect(clean).toBeGreaterThan(scraped);
+  test("orbit rings never overlap, so the arc can never be skipped", () => {
+    for (let seed = 1; seed <= 150; seed++) {
+      let state = createTetherState(seed);
+      for (let hop = 0; hop < 30; hop++) {
+        const from = anchorById(state, state.anchorId);
+        const to = state.anchors.find((a) => a.id === state.anchorId + 1);
+        if (!from || !to) break;
+        expect(gapDistance(from, to)).toBeGreaterThan(ORBIT_RADIUS * 2);
+        state = { ...state, anchorId: to.id };
+      }
+    }
+  });
+
+  test("no point on an orbit is already inside the next anchor's capture band", () => {
+    for (let seed = 1; seed <= 80; seed++) {
+      const state = createTetherState(seed);
+      const from = state.anchors[0];
+      const to = state.anchors[1];
+      for (let a = 0; a < Math.PI * 2; a += 0.06) {
+        const px = from.x + Math.cos(a) * ORBIT_RADIUS;
+        const py = from.y + Math.sin(a) * ORBIT_RADIUS;
+        const error = Math.abs(Math.hypot(to.x - px, to.y - py) - ORBIT_RADIUS);
+        expect(error).toBeGreaterThan(captureTolerance(from.id));
+      }
+    }
   });
 
   test("identical seeds and inputs produce identical runs", () => {

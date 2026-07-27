@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createTetherState, step, type TetherState } from "./simulation";
-import { play } from "@/lib/audio";
+import { isMuted, loadMutePreference, play, setMuted } from "@/lib/audio";
 
 /**
  * TETHER — Three.js portrait arcade game.
@@ -19,15 +19,19 @@ export function Tether({ active = true }: { active?: boolean }) {
   const release = useRef(false);
   const [hud, setHud] = useState({ score: 0, combo: 0, height: 0, failed: false, started: false });
   const [best, setBest] = useState(0);
+  const [muted, setMutedUi] = useState(true);
+  const diedAt = useRef(0);
 
   const reset = useCallback(() => {
-    world.current = createTetherState(Date.now() % 100000);
+    world.current = createTetherState(Math.floor(Math.random() * 100000) + 1);
     release.current = false;
+    renderer.current?.reset();
     setHud({ score: 0, combo: 0, height: 0, failed: false, started: false });
   }, []);
 
   useEffect(() => {
     setBest(Number(localStorage.getItem("tether-best") ?? 0));
+    setMutedUi(loadMutePreference());
     world.current = createTetherState(Date.now() % 100000);
   }, []);
 
@@ -54,11 +58,12 @@ export function Tether({ active = true }: { active?: boolean }) {
         release.current = false;
         world.current = next;
 
-        if (next.event === "release") play("flip");
+        if (next.event === "release") { play("flip"); renderer.current?.punch(0.22); }
         if (next.event === "latch") play("score");
         if (next.event === "perfect") { play("combo"); renderer.current?.punch(0.6); }
         if (next.event === "decay") { play("power"); renderer.current?.punch(0.4); }
         if (next.event === "dead") {
+          diedAt.current = now;
           play("fail");
           renderer.current?.punch(1);
           setBest((current) => {
@@ -69,7 +74,13 @@ export function Tether({ active = true }: { active?: boolean }) {
         }
 
         renderer.current?.render(next, dt);
-        setHud({ score: next.score, combo: next.combo, height: Math.round(next.height * 10), failed: next.failed, started: next.anchorId > 1 || next.phase !== "orbiting" });
+        const height = Math.round(next.height * 10);
+        const started = next.anchorId > 1 || next.phase !== "orbiting";
+        setHud((current) =>
+          current.score === next.score && current.combo === next.combo && current.height === height
+            && current.failed === next.failed && current.started === started
+            ? current
+            : { score: next.score, combo: next.combo, height, failed: next.failed, started });
         frame = requestAnimationFrame(loop);
       };
       frame = requestAnimationFrame(loop);
@@ -87,16 +98,38 @@ export function Tether({ active = true }: { active?: boolean }) {
 
   const onPointerDown = (event: React.PointerEvent) => {
     event.preventDefault();
-    if (world.current.failed) { reset(); return; }
+    if (world.current.failed) {
+      // Read your score before you can restart, and never restart twice from the
+      // button (which used to fire through the parent as well).
+      if (performance.now() - diedAt.current > 650) reset();
+      return;
+    }
     release.current = true;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(8);
   };
 
   return (
-    <div className="tether" onPointerDown={onPointerDown} role="button" tabIndex={0} aria-label="Tether — tap to release">
+    <div
+      className="tether"
+      onPointerDown={onPointerDown}
+      onKeyDown={(event) => {
+        if (event.key !== " " && event.key !== "Enter") return;
+        event.preventDefault();
+        if (world.current.failed) { if (performance.now() - diedAt.current > 650) reset(); return; }
+        release.current = true;
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Tether — tap or press space to release"
+    >
       <canvas ref={canvas} className="tether-canvas" />
 
-      <div className="tether-hud">
+      <button type="button" className="tether-mute" aria-pressed={!muted}
+        onPointerDown={(event) => { event.stopPropagation(); setMutedUi(setMuted(!isMuted())); }}>
+        {muted ? "SOUND OFF" : "SOUND ON"}
+      </button>
+
+      <div className="tether-hud" aria-live="off" aria-hidden="true">
         <span className="tether-score">{hud.score}</span>
         <span className="tether-sub">{hud.height} M · BEST {best}</span>
         {hud.combo > 1 && <span className="tether-combo">PERFECT ×{hud.combo}</span>}
@@ -114,7 +147,7 @@ export function Tether({ active = true }: { active?: boolean }) {
           <span>YOU FELL</span>
           <strong>{hud.score}</strong>
           <em>{hud.height} M CLIMBED</em>
-          <button type="button" onClick={reset}>GO AGAIN</button>
+          <button type="button" onPointerDown={(event) => { event.stopPropagation(); if (performance.now() - diedAt.current > 650) reset(); }}>GO AGAIN</button>
         </div>
       )}
     </div>
