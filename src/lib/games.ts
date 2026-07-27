@@ -1,4 +1,4 @@
-export const gameSlugs = ["switchback", "skyline", "pulse", "reflex", "overload", "swarm", "slice"] as const;
+export const gameSlugs = ["switchback", "tether", "skyline", "pulse", "reflex", "overload", "swarm", "slice"] as const;
 
 export type GameSlug = (typeof gameSlugs)[number];
 
@@ -6,7 +6,7 @@ export type GameDefinition = {
   slug: GameSlug;
   title: string;
   kicker: string;
-  accent: "cobalt" | "magenta" | "acid" | "electric" | "ember" | "toxic" | "violet";
+  accent: "cobalt" | "magenta" | "acid" | "electric" | "ember" | "toxic" | "violet" | "void";
   description: string;
   scoreCap: number;
   rules: { action: string; score: string; danger: string };
@@ -14,6 +14,7 @@ export type GameDefinition = {
 
 export const games: GameDefinition[] = [
   { slug: "switchback", title: "Switchback", kicker: "Tap to flip.", accent: "cobalt", description: "Zigzag runner", scoreCap: 4_000, rules: { action: "TAP TO FLIP", score: "PASS BENDS + GRAB", danger: "DODGE HAZARDS + CHASER" } },
+  { slug: "tether", title: "Tether", kicker: "Tap to let go.", accent: "void", description: "Orbital climb", scoreCap: 20_000, rules: { action: "TAP TO LET GO", score: "THREAD THE NEXT RING", danger: "MISS IT AND YOU FALL" } },
   { slug: "skyline", title: "Skyline", kicker: "Tap to stack.", accent: "magenta", description: "Precision tower", scoreCap: 4_000, rules: { action: "TAP TO DROP", score: "STACK PRECISELY", danger: "MISSES END THE RUN" } },
   { slug: "pulse", title: "Pulse Weave", kicker: "Tap to swap.", accent: "electric", description: "Twin-signal phase run", scoreCap: 6_000, rules: { action: "TAP TO SWAP", score: "MATCH THE LIVE PHASE", danger: "WRONG PHASE BREAKS" } },
   { slug: "reflex", title: "Reflex", kicker: "Tap on the arc.", accent: "ember", description: "Timing dial", scoreCap: 6_000, rules: { action: "TAP ON THE ARC", score: "BUILD A STREAK", danger: "A MISS ENDS THE RUN" } },

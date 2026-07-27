@@ -9,6 +9,7 @@ import { enableAudio, isMuted, setMuted, silence, startMusic, stopMusic } from "
 import { games, type GameSlug } from "@/lib/games";
 import type { LeaderboardResponse } from "@/lib/score-store";
 import { Switchback } from "@/games/switchback/switchback";
+import { Tether } from "@/games/tether/tether";
 import { Stack } from "@/games/stack";
 import { Pulse } from "@/games/pulse";
 import { Reflex } from "@/games/reflex";
@@ -48,7 +49,7 @@ export function TipTapArcade() {
   const [deck, setDeck] = useState(() => buildDeck(CYCLE));
   const [activeIndex, setActiveIndex] = useState(0);
   const [deviceId, setDeviceId] = useState("");
-  const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ switchback: EMPTY, skyline: EMPTY, pulse: EMPTY, reflex: EMPTY, overload: EMPTY, swarm: EMPTY, slice: EMPTY });
+  const [boards, setBoards] = useState<Record<GameSlug, LeaderboardResponse>>({ switchback: EMPTY, tether: EMPTY, skyline: EMPTY, pulse: EMPTY, reflex: EMPTY, overload: EMPTY, swarm: EMPTY, slice: EMPTY });
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [account, setAccount] = useState<{ signedIn: boolean; name?: string }>({ signedIn: false });
@@ -180,6 +181,7 @@ export function TipTapArcade() {
 
               <div className="stage-host">
                 {card.slug === "switchback" && <Switchback active={live} onFinish={(data) => void submit("switchback", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
+                {card.slug === "tether" && <Tether active={live} onFinish={(data) => void submit("tether", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "skyline" && <Stack active={live} onFinish={(data) => void submit("skyline", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "pulse" && <Pulse active={live} onFinish={(data) => void submit("pulse", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}
                 {card.slug === "reflex" && <Reflex active={live} onFinish={(data) => void submit("reflex", card.key, data)} onRunningChange={(running) => { if (running) setResult(null); setPlayingKey(running ? card.key : (current) => (current === card.key ? null : current)); }} />}

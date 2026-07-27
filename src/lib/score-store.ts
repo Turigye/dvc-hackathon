@@ -7,6 +7,7 @@ type StoredScore = { game: GameSlug; deviceId: string; score: number; createdAt:
 
 const seeds: StoredScore[] = [
   { game: "switchback", deviceId: "jax", score: 320, createdAt: 1 }, { game: "switchback", deviceId: "nova", score: 250, createdAt: 2 }, { game: "switchback", deviceId: "kat", score: 180, createdAt: 3 },
+  { game: "tether", deviceId: "nova", score: 340, createdAt: 30 }, { game: "tether", deviceId: "sol", score: 210, createdAt: 31 },
   { game: "skyline", deviceId: "ivy", score: 210, createdAt: 10 }, { game: "skyline", deviceId: "jax", score: 160, createdAt: 11 },
   { game: "pulse", deviceId: "sol", score: 180, createdAt: 20 }, { game: "reflex", deviceId: "mika", score: 240, createdAt: 21 },
   { game: "slice", deviceId: "neon", score: 1240, createdAt: 4 }, { game: "slice", deviceId: "ivy", score: 890, createdAt: 5 }, { game: "slice", deviceId: "rae", score: 640, createdAt: 6 },

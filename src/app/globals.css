@@ -421,3 +421,44 @@ button, a { font:inherit; color:inherit; } button { border:0; background:none; c
 .switchback-art.is-chaser.is-stunned { opacity:.58; filter:grayscale(.6) drop-shadow(0 0 8px #F5A623); }
 .hazard image, .pickup + image { pointer-events:none; }
 @media (prefers-reduced-motion:reduce) { .runner-art, .chaser-art { filter:none; } }
+
+.world-void { --bg1:#05030f; --bg2:#1b1150; --pop:#7cf9ff; --pop2:#ff3d9a; }
+
+/* ---- TETHER (Three.js). Canvas fills the card; feed chrome sits on top. ---- */
+.tether { position:absolute; inset:0; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; }
+.tether-canvas { display:block; width:100%; height:100%; }
+
+.tether-hud { position:absolute; top:calc(18px + env(safe-area-inset-top)); left:0; right:0; display:grid; justify-items:center; gap:2px; pointer-events:none; }
+.tether-score { font-family:var(--font-display), system-ui, sans-serif; font-size:4rem; font-weight:800; line-height:.9; color:#fff;
+  text-shadow:0 0 26px rgba(124,249,255,.65), 0 4px 20px rgba(0,0,0,.6); font-variant-numeric:tabular-nums; }
+.tether-sub { color:rgba(255,255,255,.5); font-family:var(--font-mono), ui-monospace, monospace; font-size:.6rem; letter-spacing:.22em; }
+.tether-combo { margin-top:6px; border-radius:999px; padding:4px 12px; background:#ffd200; color:#05030f;
+  font-family:var(--font-mono), monospace; font-size:.6rem; font-weight:700; letter-spacing:.14em; animation:tether-pop 320ms cubic-bezier(.2,1.5,.4,1); }
+@keyframes tether-pop { 0% { transform:scale(0) rotate(-8deg); } 70% { transform:scale(1.16); } 100% { transform:scale(1); } }
+
+.tether-coach { position:absolute; left:0; right:0; bottom:20%; display:grid; justify-items:center; gap:14px; pointer-events:none;
+  color:rgba(255,255,255,.82); font-family:var(--font-mono), monospace; font-size:.68rem; letter-spacing:.24em; }
+.tether-coach-ring { width:54px; height:54px; border:2px solid rgba(124,249,255,.85); border-radius:50%; animation:tether-ring 1.5s ease-out infinite; }
+@keyframes tether-ring { 0% { transform:scale(.7); opacity:1; } 100% { transform:scale(1.5); opacity:0; } }
+
+.tether-over { position:absolute; inset:auto 22px calc(38px + env(safe-area-inset-bottom)); display:grid; justify-items:center; gap:4px;
+  border:2px solid rgba(124,249,255,.5); border-radius:22px; padding:22px; background:rgba(5,3,15,.86); backdrop-filter:blur(18px);
+  animation:tether-rise 240ms cubic-bezier(.2,1,.3,1); }
+@keyframes tether-rise { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+.tether-over span { color:#ff3d9a; font-family:var(--font-mono), monospace; font-size:.66rem; font-weight:700; letter-spacing:.24em; }
+.tether-over strong { font-family:var(--font-display), system-ui, sans-serif; font-size:3.6rem; font-weight:800; line-height:1; color:#fff; }
+.tether-over em { color:rgba(255,255,255,.55); font-family:var(--font-mono), monospace; font-size:.6rem; font-style:normal; letter-spacing:.2em; }
+.tether-over button { width:100%; min-height:52px; margin-top:14px; border:0; border-radius:999px; background:#7cf9ff; color:#05030f;
+  font-family:var(--font-display), system-ui, sans-serif; font-size:.9rem; font-weight:800; letter-spacing:.1em; }
+.tether-over button:active { transform:translateY(2px); }
+
+@media (prefers-reduced-motion:reduce) { .tether-coach-ring, .tether-combo, .tether-over { animation:none; } }
+
+.tether-mute { position:absolute; top:calc(16px + env(safe-area-inset-top)); right:16px; z-index:3;
+  border:1.5px solid rgba(255,255,255,.28); border-radius:999px; padding:8px 14px; background:rgba(5,3,15,.6);
+  color:rgba(255,255,255,.75); font-family:var(--font-mono), monospace; font-size:.55rem; letter-spacing:.16em; }
+.tether-mute[aria-pressed="true"] { border-color:#7cf9ff; color:#7cf9ff; }
+
+/* Feed mode: lift Tether's coach clear of the card's own title and chrome. */
+.card .tether-coach { bottom:auto; top:38%; }
+.card .tether-canvas { z-index:0; }

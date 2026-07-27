@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createTetherState, step, type TetherState } from "./simulation";
 import { isMuted, loadMutePreference, play, setMuted } from "@/lib/audio";
+import type { GameProps } from "../types";
 
 const scoreFormat = new Intl.NumberFormat("en-US");
 /** A long run can reach five figures. Shrink the readout by digit count rather
@@ -16,7 +17,14 @@ const scoreScale = (score: number) => Math.max(0.46, 1 - Math.max(0, String(scor
  * The renderer is imported lazily so Three never lands in the initial bundle,
  * and the whole thing tears itself down when it leaves the screen.
  */
-export function Tether({ active = true }: { active?: boolean }) {
+/**
+ * Runs in two modes. Standalone (the `/lab/tether` route) draws its own HUD and
+ * game-over card. Inside the feed it reports through `onFinish` and lets the
+ * shared card chrome own the score, leaderboard and restart, exactly like the
+ * other seven games.
+ */
+export function Tether({ active = true, onFinish, onRunningChange }: Partial<GameProps>) {
+  const inFeed = Boolean(onFinish);
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const renderer = useRef<import("./renderer").TetherRenderer | null>(null);
   // Seeded lazily inside an effect: Date.now() during render is impure.
@@ -26,13 +34,19 @@ export function Tether({ active = true }: { active?: boolean }) {
   const [best, setBest] = useState(0);
   const [muted, setMutedUi] = useState(true);
   const diedAt = useRef(0);
+  const startedAt = useRef(0);
+  const finish = useRef(onFinish);
 
   const reset = useCallback(() => {
+    startedAt.current = Date.now();
     world.current = createTetherState(Math.floor(Math.random() * 100000) + 1);
     release.current = false;
     renderer.current?.reset();
     setHud({ score: 0, combo: 0, height: 0, failed: false, started: false });
   }, []);
+
+  useEffect(() => { finish.current = onFinish; });
+  useEffect(() => { onRunningChange?.(hud.started && !hud.failed); }, [hud.started, hud.failed, onRunningChange]);
 
   useEffect(() => {
     setBest(Number(localStorage.getItem("tether-best") ?? 0));
@@ -69,6 +83,11 @@ export function Tether({ active = true }: { active?: boolean }) {
         if (next.event === "decay") { play("power"); renderer.current?.punch(0.4); }
         if (next.event === "dead") {
           diedAt.current = now;
+          finish.current?.({
+            score: next.score,
+            durationMs: Math.max(1000, Date.now() - startedAt.current),
+            label: next.bestCombo >= 4 ? `PERFECT ×${next.bestCombo}` : `${Math.round(next.height * 10)} M CLIMBED`,
+          });
           play("fail");
           renderer.current?.punch(1);
           setBest((current) => {
@@ -109,6 +128,7 @@ export function Tether({ active = true }: { active?: boolean }) {
       if (performance.now() - diedAt.current > 650) reset();
       return;
     }
+    if (!hud.started) startedAt.current = Date.now();
     release.current = true;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(8);
   };
@@ -129,16 +149,24 @@ export function Tether({ active = true }: { active?: boolean }) {
     >
       <canvas ref={canvas} className="tether-canvas" />
 
-      <button type="button" className="tether-mute" aria-pressed={!muted}
+      {!inFeed && <button type="button" className="tether-mute" aria-pressed={!muted}
         onPointerDown={(event) => { event.stopPropagation(); setMutedUi(setMuted(!isMuted())); }}>
         {muted ? "SOUND OFF" : "SOUND ON"}
-      </button>
+      </button>}
 
-      <div className="tether-hud" aria-live="off" aria-hidden="true">
+      {!inFeed && <div className="tether-hud" aria-live="off" aria-hidden="true">
         <span className="tether-score" style={{ transform: `scale(${scoreScale(hud.score)})` }}>{scoreFormat.format(hud.score)}</span>
         <span className="tether-sub">{hud.height} M · BEST {scoreFormat.format(best)}</span>
         {hud.combo > 1 && <span className="tether-combo">PERFECT ×{hud.combo}</span>}
-      </div>
+      </div>}
+
+      {inFeed && (
+        <div className="hud">
+          <span>SCORE</span>
+          <strong key={hud.score}>{String(hud.score).padStart(3, "0")}</strong>
+          {hud.combo > 1 && <em className="combo">PERFECT ×{hud.combo}</em>}
+        </div>
+      )}
 
       {!hud.started && !hud.failed && (
         <div className="tether-coach">
@@ -147,7 +175,7 @@ export function Tether({ active = true }: { active?: boolean }) {
         </div>
       )}
 
-      {hud.failed && (
+      {hud.failed && !inFeed && (
         <div className="tether-over">
           <span>YOU FELL</span>
           <strong style={{ transform: `scale(${scoreScale(hud.score)})` }}>{scoreFormat.format(hud.score)}</strong>
