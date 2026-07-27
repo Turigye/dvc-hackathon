@@ -27,7 +27,10 @@ function SvgArt({ active, className, src, x, y, size, fallback, groupClassName, 
   const ready = active && loadedSrc === src && failedSrc !== src;
   return (
     <g className={groupClassName}>
-      <g className="switchback-fallback" opacity={ready ? 0 : 1}>{fallback}</g>
+      {/* Never expose blockout geometry during a live run. Artwork failure is
+          intentionally quiet rather than turning the finished game back into
+          circles, bars, or rounded placeholders. */}
+      <g className="switchback-fallback" opacity={active ? 0 : (ready ? 0 : 1)}>{fallback}</g>
       {active && failedSrc !== src && (
         <image
           className={`switchback-art ${className}`}

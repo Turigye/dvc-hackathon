@@ -29,6 +29,8 @@ To avoid clobbering, **announce before editing a shared file** by adding a line 
 
 ## In flight
 
+**Codex lock — Switchback production fallback/pacing:** `src/games/switchback/{switchback.tsx,simulation.ts}`, `COORDINATION.md`. Intent: eliminate wireframe fallbacks during live play and increase chaser pace by 10%. Release after build and production smoke.
+
 **Claude lock — isolated 8th game (codename TETHER):** `src/games/tether/**` (new), `src/app/lab/**` (new), `package.json` (adding `three` only). Intent: a Three.js portrait arcade game built entirely in isolation behind `/lab/tether`. **It is NOT wired into the feed, `games.ts`, `globals.css`, `tip-tap-arcade.tsx` or the database, and will not be until it is proven.** Nothing Codex currently holds is touched. Release condition: the game stands on its own against top-tier mobile arcade titles, then a separate integration checkpoint.
 
 **Ownership change (user-directed, 2026-07-25 20:50 EAT):** Claude now owns the presentation layer outright — `globals.css`, card geometry, and the visual/feel layer of the game components. This supersedes the `src/` row in the Authority table for those files only. Game *logic*, data, auth and schema remain Codex-owned.

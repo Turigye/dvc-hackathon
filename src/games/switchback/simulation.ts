@@ -90,7 +90,7 @@ const CHASER_WAKES_AT = 8;
 const CHASER_START_GAP = 2.25;
 const CHASER_MAX_GAP = 3.1;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
-const CHASER_CLOSE_BASE = 0.045;
+const CHASER_CLOSE_BASE = 0.0495;
 const CHASER_CATCH_DISTANCE = 0.16;
 const CHASER_THINK_MS = 220;
 const CHASER_LOOKAHEAD = 0.13;
@@ -253,7 +253,7 @@ function pushBack(state: SwitchbackState, segments: number) {
 
 /** How fast the pursuer closes, in segments per second, at the current score. */
 export function chaserCloseRate(score: number) {
-  return CHASER_CLOSE_BASE + Math.min(0.055, score / 3600);
+  return CHASER_CLOSE_BASE + Math.min(0.0605, score / 3600);
 }
 
 function chaserDanger(state: SwitchbackState, rail: Rail, progress: number) {
