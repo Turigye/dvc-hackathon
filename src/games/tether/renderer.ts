@@ -50,6 +50,7 @@ export class TetherRenderer {
   private readonly stars: THREE.Points;
   private trailHead = 0;
   private cameraY = 0;
+  private cameraX = 0;
   private shake = 0;
   private readonly reducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -119,6 +120,7 @@ export class TetherRenderer {
    *  stayed parked at the previous run's height and the new orb spawned off-screen. */
   reset() {
     this.cameraY = 0;
+    this.cameraX = 0;
     this.shake = 0;
     this.trailPositions.fill(-999);
     (this.trail.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
@@ -222,14 +224,30 @@ export class TetherRenderer {
     // Camera eases upward and never drops, so the climb always reads as progress.
     const targetY = Math.max(this.cameraY, pos.y + 1.1);
     this.cameraY += (targetY - this.cameraY) * Math.min(1, dtMs / 130);
+
+    // Horizontal tracking is phase-dependent. While orbiting, the orb itself
+    // swings +/-ORBIT_RADIUS around the anchor every spin; following that
+    // directly reads as camera wobble, so we hold on the anchor's x instead
+    // and pan to it gently. The moment you release, a bad shot can send the
+    // orb far off either side, and any eased follow — even a fast one — can
+    // still lose it for a frame if dt spikes (a stalled tab catching up, a
+    // GC pause). Flight tracking is a hard snap with no easing at all, so the
+    // orb is physically incapable of leaving frame regardless of frame timing.
+    if (state.phase === "orbiting" && anchor) {
+      const targetX = anchorPosition(anchor, state.elapsedMs).x;
+      this.cameraX += (targetX - this.cameraX) * Math.min(1, dtMs / 260);
+    } else {
+      this.cameraX = pos.x;
+    }
+
     this.shake = Math.max(0, this.shake - dtMs / 260);
     const jolt = this.shake * this.shake * 0.22;
     this.camera.position.set(
-      pos.x * 0.62 + (jolt > 0 ? (Math.random() - 0.5) * jolt : 0),
+      this.cameraX + (jolt > 0 ? (Math.random() - 0.5) * jolt : 0),
       this.cameraY + (jolt > 0 ? (Math.random() - 0.5) * jolt : 0),
       9.4,
     );
-    this.camera.lookAt(pos.x * 0.62, this.cameraY - 0.4, 0);
+    this.camera.lookAt(this.cameraX, this.cameraY - 0.4, 0);
     this.stars.position.y = this.cameraY * 0.72;
 
     this.renderer.render(this.scene, this.camera);

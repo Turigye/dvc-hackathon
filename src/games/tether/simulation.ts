@@ -95,13 +95,19 @@ function random(state: TetherState) {
 
 export const anchorById = (state: TetherState, id: number) => state.anchors.find((a) => a.id === id);
 
-/** Where the orb sits right now, given its anchor and angle. */
+/** Where the orb sits right now, given its anchor and angle.
+ *
+ *  Reads the anchor's LIVE position via `anchorPosition`, not its static
+ *  generation-time x/y. A drift anchor sways after you land on it — if this
+ *  used the static coordinates, the orb would keep circling the anchor's
+ *  original spot while the ring you can see visibly sails away from it. */
 export function orbitPoint(state: TetherState): Vec2 {
   const anchor = anchorById(state, state.anchorId);
   if (!anchor) return state.pos;
+  const at = anchorPosition(anchor, state.elapsedMs);
   return {
-    x: anchor.x + Math.cos(state.angle) * ORBIT_RADIUS,
-    y: anchor.y + Math.sin(state.angle) * ORBIT_RADIUS,
+    x: at.x + Math.cos(state.angle) * ORBIT_RADIUS,
+    y: at.y + Math.sin(state.angle) * ORBIT_RADIUS,
   };
 }
 
