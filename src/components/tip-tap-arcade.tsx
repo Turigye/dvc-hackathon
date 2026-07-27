@@ -52,7 +52,7 @@ export function TipTapArcade() {
   const [result, setResult] = useState<{ key: string; data: GameResult } | null>(null);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
   const [account, setAccount] = useState<{ signedIn: boolean; name?: string }>({ signedIn: false });
-  const [mute, setMute] = useState(true);
+  const [mute, setMute] = useState(false);
   const [initials, setInitials] = useState<string | null>(null);
   const [draft, setDraft] = useState("AAA");
   // Every guest gets initials up front. A board full of "PLAYER" looks dead.
@@ -71,7 +71,7 @@ export function TipTapArcade() {
   const cards = useRef<Map<string, HTMLElement>>(new Map());
   const feed = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { setDeviceId(getDeviceId()); setMute(setMuted(true)); }, []);
+  useEffect(() => { setDeviceId(getDeviceId()); }, []);
   useEffect(() => {
     // ?nopause=1 keeps the feed running while hidden so automated visual QA can
     // screenshot live gameplay. Never set in normal use.
@@ -276,7 +276,7 @@ export function TipTapArcade() {
       {!booted && (
         <Boot
           muted={mute}
-          onStart={() => setBooted(true)}
+          onStart={() => { setMute(setMuted(false)); setBooted(true); }}
           onMenu={() => setMenuOpen(true)}
           onToggleSound={() => setMute(setMuted(!isMuted()))}
           signedIn={account.signedIn}
