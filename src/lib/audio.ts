@@ -58,7 +58,12 @@ export function loadMutePreference() {
 export function setMuted(next: boolean) {
   muted = next;
   if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, next ? "on" : "off");
-  if (!next) ensureContext();
+  if (!next) {
+    const ctx = ensureContext();
+    // Some mobile browsers create the context suspended even inside the first
+    // tap. Resume synchronously from that same gesture.
+    if (ctx?.state === "suspended") void ctx.resume();
+  }
   if (next) stopMusic();
   if (master && context) master.gain.setTargetAtTime(next ? 0 : MASTER_LEVEL, context.currentTime, 0.01);
   return muted;

@@ -87,7 +87,7 @@ const NEAR_MISS_WINDOW = 0.12;
 
 /** The pursuer wakes once the player has found their footing. */
 const CHASER_WAKES_AT = 8;
-const CHASER_START_GAP = 2.25;
+const CHASER_START_GAP = 1.75;
 const CHASER_MAX_GAP = 3.1;
 /** Segments per second the gap closes on its own, before risk pushes it back. */
 const CHASER_CLOSE_BASE = 0.0495;
